@@ -399,47 +399,46 @@ function hideLoading() {
 }
 
 // =============================================
-// INIT — API'den veri çek
+// INIT — JSONP ile veri çek (CORS bypass)
 // =============================================
-window.onload = async function() {
-  showLoading();
+function handleData(json) {
   try {
-    const res = await fetch(API_URL);
-    const json = await res.json();
-
-    // Gelen veriyi WEEKS_DATA'ya aktar
-    Object.keys(json).forEach(k => {
+    Object.keys(json).forEach(function(k) {
       if(Array.isArray(json[k]) && json[k].length > 0) {
-        // saatBasi 0.72 gibi geliyorsa *10 yap → 7.2
-        WEEKS_DATA[k] = json[k].map(d => ({
-          ...d,
-          saatBasi: d.saatBasi < 5 ? parseFloat((d.saatBasi * 10).toFixed(2)) : d.saatBasi
-        }));
+        WEEKS_DATA[k] = json[k].map(function(d) {
+          return {
+            isim:       d.isim,
+            chat:       d.chat,
+            saatBasi:   d.saatBasi < 5 ? parseFloat((d.saatBasi * 10).toFixed(2)) : d.saatBasi,
+            memnuniyet: d.memnuniyet,
+            karsilama:  d.karsilama,
+            uyeSoru:    d.uyeSoru,
+            ortChat:    d.ortChat,
+            cevapsiz:   d.cevapsiz,
+            puan:       d.puan
+          };
+        });
       }
     });
 
-    if(Object.keys(WEEKS_DATA).length === 0) throw new Error('Veri boş geldi');
+    if(Object.keys(WEEKS_DATA).length === 0) throw new Error('Veri bos geldi');
 
-    // Agent listesini ilk haftadan çıkar
-    const firstWeek = Object.keys(WEEKS_DATA)[0];
-    AGENTS_CORE = WEEKS_DATA[firstWeek].map(d => d.isim);
+    var firstWeek = Object.keys(WEEKS_DATA)[0];
+    AGENTS_CORE = WEEKS_DATA[firstWeek].map(function(d){ return d.isim; });
 
-    // Renk ata
-    AGENTS_CORE.forEach((a, i) => {
+    AGENTS_CORE.forEach(function(a, i) {
       COLORS[a] = COLOR_PALETTE[i % COLOR_PALETTE.length];
     });
 
-    // İlk state
     currentWeek = firstWeek;
     selectedAgent = AGENTS_CORE[0];
     radarAgent = CORE_AGENTS_FIXED[0];
     activeAgents = new Set(AGENTS_CORE.slice(0, 3));
 
-    // Hafta selector
-    const ws = document.getElementById('weekSelect');
+    var ws = document.getElementById('weekSelect');
     ws.innerHTML = '';
-    Object.keys(WEEKS_DATA).forEach(w => {
-      const o = document.createElement('option');
+    Object.keys(WEEKS_DATA).forEach(function(w) {
+      var o = document.createElement('option');
       o.value = w; o.textContent = w;
       ws.appendChild(o);
     });
@@ -451,18 +450,45 @@ window.onload = async function() {
     initRadarChart();
     initBarChart();
     updateAll();
+    hideLoading();
 
   } catch(err) {
-    document.getElementById('loadingOverlay').innerHTML = `
-      <div style="text-align:center;color:#ff4757">
-        <div style="font-size:32px;margin-bottom:16px">⚠️</div>
-        <div style="font-family:DM Mono;font-size:13px">Veri çekilemedi: ${err.message}</div>
-        <div style="font-family:DM Mono;font-size:11px;color:#5a6278;margin-top:8px">Apps Script URL'sini ve izinleri kontrol edin</div>
-        <button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>
-      </div>`;
-    return;
+    var msg = err && err.message ? err.message : 'Bilinmeyen hata';
+    document.getElementById('loadingOverlay').innerHTML =
+      '<div style="text-align:center;color:#ff4757">' +
+      '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
+      '<div style="font-family:DM Mono;font-size:13px">Veri isleme hatasi: ' + msg + '</div>' +
+      '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
+      '</div>';
   }
-  hideLoading();
+}
+
+window.onload = function() {
+  showLoading();
+
+  // 10 saniye timeout
+  var timeout = setTimeout(function() {
+    document.getElementById('loadingOverlay').innerHTML =
+      '<div style="text-align:center;color:#ff4757">' +
+      '<div style="font-size:32px;margin-bottom:16px">⏱️</div>' +
+      '<div style="font-family:DM Mono;font-size:13px">Baglanti zaman asimi (10s)</div>' +
+      '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
+      '</div>';
+  }, 10000);
+
+  // JSONP script tag ekle
+  var script = document.createElement('script');
+  script.src = API_URL + '?callback=handleData';
+  script.onerror = function() {
+    clearTimeout(timeout);
+    document.getElementById('loadingOverlay').innerHTML =
+      '<div style="text-align:center;color:#ff4757">' +
+      '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
+      '<div style="font-family:DM Mono;font-size:13px">Script yuklenemedi</div>' +
+      '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
+      '</div>';
+  };
+  document.head.appendChild(script);
 };
 
 function loadWeek(w) {
@@ -504,26 +530,25 @@ function updateKPIs() {
   // En yüksek + sondan 2. ve 3. banner
   const banner = document.getElementById('performanceBanner');
   if(banner) {
-    banner.innerHTML = \`
-      <div class="perf-card best">
-        <span class="perf-icon">🏆</span>
-        <span class="perf-label">EN YÜKSEK</span>
-        <span class="perf-name">\${best.isim}</span>
-        <span class="perf-score">\${best.puan}</span>
-      </div>
-      <div class="perf-card warn">
-        <span class="perf-icon">⚠️</span>
-        <span class="perf-label">SONDAN 2.</span>
-        <span class="perf-name">\${worst2.isim}</span>
-        <span class="perf-score">\${worst2.puan}</span>
-      </div>
-      <div class="perf-card danger">
-        <span class="perf-icon">🔻</span>
-        <span class="perf-label">SONDAN 3.</span>
-        <span class="perf-name">\${worst3.isim}</span>
-        <span class="perf-score">\${worst3.puan}</span>
-      </div>
-    \`;
+    banner.innerHTML = 
+      '<div class="perf-card best">' +
+      '<span class="perf-icon">🏆</span>' +
+      '<span class="perf-label">EN YÜKSEK</span>' +
+      '<span class="perf-name">' + best.isim + '</span>' +
+      '<span class="perf-score">' + best.puan + '</span>' +
+      '</div>' +
+      '<div class="perf-card warn">' +
+      '<span class="perf-icon">⚠️</span>' +
+      '<span class="perf-label">SONDAN 2.</span>' +
+      '<span class="perf-name">' + worst2.isim + '</span>' +
+      '<span class="perf-score">' + worst2.puan + '</span>' +
+      '</div>' +
+      '<div class="perf-card danger">' +
+      '<span class="perf-icon">🔻</span>' +
+      '<span class="perf-label">SONDAN 3.</span>' +
+      '<span class="perf-name">' + worst3.isim + '</span>' +
+      '<span class="perf-score">' + worst3.puan + '</span>' +
+      '</div>';
   }
 
   // delta vs previous week
@@ -551,27 +576,29 @@ function updateLeaderboard() {
   const idx = weeks.indexOf(currentWeek);
   const prevData = idx < weeks.length-1 ? WEEKS_DATA[weeks[idx+1]] : null;
 
-  const lb = document.getElementById('leaderboard');
-  lb.innerHTML = sorted.map((d,i) => {
-    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
-    const pct = Math.round((d.puan/maxPuan)*100);
-    const barColor = COLORS[d.isim] || '#fff';
-    let deltaHtml = '';
+  var lb = document.getElementById('leaderboard');
+  lb.innerHTML = sorted.map(function(d,i) {
+    var rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    var pct = Math.round((d.puan/maxPuan)*100);
+    var barColor = COLORS[d.isim] || '#fff';
+    var deltaHtml = '';
     if(prevData) {
-      const prevSorted = [...prevData].sort((a,b)=>b.puan-a.puan);
-      const prevRank = prevSorted.findIndex(x=>x.isim===d.isim);
-      const diff = prevRank - i;
-      if(diff>0) deltaHtml = `<span class="lb-delta up">▲${diff}</span>`;
-      else if(diff<0) deltaHtml = `<span class="lb-delta down">▼${Math.abs(diff)}</span>`;
-      else deltaHtml = `<span class="lb-delta same">—</span>`;
+      var prevSorted = prevData.slice().sort(function(a,b){return b.puan-a.puan;});
+      var prevRank = -1;
+      for(var pi=0;pi<prevSorted.length;pi++){if(prevSorted[pi].isim===d.isim){prevRank=pi;break;}}
+      var diff = prevRank - i;
+      if(diff>0) deltaHtml = '<span class="lb-delta up">▲'+diff+'</span>';
+      else if(diff<0) deltaHtml = '<span class="lb-delta down">▼'+Math.abs(diff)+'</span>';
+      else deltaHtml = '<span class="lb-delta same">—</span>';
     }
-    return `<div class="lb-row">
-      <div class="lb-rank ${rankClass}">${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</div>
-      <div class="lb-name">${d.isim}</div>
-      <div class="lb-bar-wrap" style="flex:1"><div class="lb-bar" style="width:${pct}%;background:${barColor}"></div></div>
-      <div class="lb-score" style="color:${barColor}">${d.puan}</div>
-      ${deltaHtml}
-    </div>`;
+    var rankSymbol = i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1);
+    return '<div class="lb-row">' +
+      '<div class="lb-rank '+rankClass+'">'+rankSymbol+'</div>' +
+      '<div class="lb-name">'+d.isim+'</div>' +
+      '<div class="lb-bar-wrap" style="flex:1"><div class="lb-bar" style="width:'+pct+'%;background:'+barColor+'"></div></div>' +
+      '<div class="lb-score" style="color:'+barColor+'">'+d.puan+'</div>' +
+      deltaHtml +
+      '</div>';
   }).join('');
 }
 
@@ -804,7 +831,7 @@ function updateHeatmap() {
   // Hafta sırasını orijinal sırasına göre koru (Sheets sekme sırası = tarih sırası)
   const table = document.getElementById('heatmapTable');
   let html = '<thead><tr><th>Agent</th>';
-  weeks.forEach(w => html += `<th style="font-size:9px;white-space:nowrap">${w}</th>`);
+  weeks.forEach(function(w) { html += '<th style="font-size:9px;white-space:nowrap">'+w+'</th>'; });
   html += '</tr></thead><tbody>';
 
   const allPuans = weeks.flatMap(w => WEEKS_DATA[w].map(d=>d.puan)).filter(p=>p>0);
@@ -813,15 +840,15 @@ function updateHeatmap() {
   // Sadece sabit core agentları göster
   const heatAgents = CORE_AGENTS_FIXED;
   heatAgents.forEach(a => {
-    html += `<tr><td class="name-cell">${a}</td>`;
+    html += '<tr><td class="name-cell">'+a+'</td>';
     weeks.forEach(w => {
       const rec = WEEKS_DATA[w].find(d=>d.isim===a);
       const puan = rec ? rec.puan : null;
       if(!puan || puan === 0) {
-        html += `<td style="background:#1e243033;color:#3a4055;border:1px solid #1e243055">—</td>`;
+        html += '<td style="background:#1e243033;color:#3a4055;border:1px solid #1e243055">—</td>';
       } else {
         const bg = heatColor(puan, minP, maxP);
-        html += `<td style="background:${bg}22;color:${bg};border:1px solid ${bg}44" title="${a}: ${puan}">${puan}</td>`;
+        html += '<td style="background:'+bg+'22;color:'+bg+';border:1px solid '+bg+'44" title="'+a+': '+puan+'">'+puan+'</td>';
       }
     });
     html += '</tr>';
@@ -849,13 +876,16 @@ function updateChangeCards() {
     return { ...d, diff };
   }).sort((a,b)=>Math.abs(b.diff)-Math.abs(a.diff)).slice(0,6);
 
-  document.getElementById('changeCards').innerHTML = changes.map(d => `
-    <div class="change-card ${d.diff>0?'up':d.diff<0?'down':'same'}">
-      <span class="change-arrow">${d.diff>0?'↑':d.diff<0?'↓':'→'}</span>
-      <div class="change-name">${d.isim}</div>
-      <div class="change-detail">${d.puan} puan • ${d.diff>0?'+':''}${d.diff}</div>
-    </div>
-  `).join('');
+  document.getElementById('changeCards').innerHTML = changes.map(function(d) {
+    var cls = d.diff>0?'up':d.diff<0?'down':'same';
+    var arrow = d.diff>0?'↑':d.diff<0?'↓':'→';
+    var sign = d.diff>0?'+':'';
+    return '<div class="change-card '+cls+'">' +
+      '<span class="change-arrow">'+arrow+'</span>' +
+      '<div class="change-name">'+d.isim+'</div>' +
+      '<div class="change-detail">'+d.puan+' puan • '+sign+d.diff+'</div>' +
+      '</div>';
+  }).join('');
 }
 
 // =============================================
@@ -868,24 +898,24 @@ function updateMetricGrid() {
   const totalCevapsiz = data.reduce((s,d)=>s+d.cevapsiz,0);
   const avgSaatBasi = (data.reduce((s,d)=>s+d.saatBasi,0)/data.length).toFixed(1);
 
-  document.getElementById('metricGrid').innerHTML = `
-    <div class="metric-item">
-      <div class="metric-item-label">Ort. Karşılama Sn</div>
-      <div class="metric-item-val" style="color:var(--accent2)">${avgKarsilama}s</div>
-    </div>
-    <div class="metric-item">
-      <div class="metric-item-label">Ort. Chat Süresi</div>
-      <div class="metric-item-val" style="color:var(--accent3)">${avgOrt}s</div>
-    </div>
-    <div class="metric-item">
-      <div class="metric-item-label">Toplam Cevapsız</div>
-      <div class="metric-item-val" style="color:${totalCevapsiz===0?'var(--accent)':'var(--danger)'}">${totalCevapsiz}</div>
-    </div>
-    <div class="metric-item">
-      <div class="metric-item-label">Ort. Saat/Chat</div>
-      <div class="metric-item-val" style="color:var(--warn)">${avgSaatBasi}</div>
-    </div>
-  `;
+  var cevapsizColor = totalCevapsiz===0?'var(--accent)':'var(--danger)';
+  document.getElementById('metricGrid').innerHTML = 
+    '<div class="metric-item">' +
+    '<div class="metric-item-label">Ort. Karşılama Sn</div>' +
+    '<div class="metric-item-val" style="color:var(--accent2)">'+avgKarsilama+'s</div>' +
+    '</div>' +
+    '<div class="metric-item">' +
+    '<div class="metric-item-label">Ort. Chat Süresi</div>' +
+    '<div class="metric-item-val" style="color:var(--accent3)">'+avgOrt+'s</div>' +
+    '</div>' +
+    '<div class="metric-item">' +
+    '<div class="metric-item-label">Toplam Cevapsız</div>' +
+    '<div class="metric-item-val" style="color:'+cevapsizColor+'">'+totalCevapsiz+'</div>' +
+    '</div>' +
+    '<div class="metric-item">' +
+    '<div class="metric-item-label">Ort. Saat/Chat</div>' +
+    '<div class="metric-item-val" style="color:var(--warn)">'+avgSaatBasi+'</div>' +
+    '</div>';
 }
 </script>
 </body>
