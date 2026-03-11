@@ -466,15 +466,15 @@ function handleData(json) {
 window.onload = function() {
   showLoading();
 
-  // 10 saniye timeout
+  // 30 saniye timeout
   var timeout = setTimeout(function() {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⏱️</div>' +
-      '<div style="font-family:DM Mono;font-size:13px">Baglanti zaman asimi (10s)</div>' +
+      '<div style="font-family:DM Mono;font-size:13px">Baglanti zaman asimi (30s)</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
-  }, 10000);
+  }, 30000);
 
   // JSONP script tag ekle
   var script = document.createElement('script');
