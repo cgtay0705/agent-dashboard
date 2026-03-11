@@ -376,7 +376,6 @@ let COLORS = {};
 // STATE
 // =============================================
 let currentWeek = '';
-let selectedAgent = '';
 let radarAgent = '';
 let trendChart, radarChart, barChart;
 let activeAgents = new Set();
@@ -384,9 +383,6 @@ let AGENTS_CORE = [];
 
 // Radar ve Heatmap'te gösterilecek sabit agent listesi
 const CORE_AGENTS_FIXED = ['Şule','Bengü','Aras','Demir','Mira','Berke','Açelya','Cenkay'];
-
-// Heatmap'te gösterilmeyecek boş haftalar
-const EMPTY_WEEKS = ['717','2316-22'];
 
 // =============================================
 // LOADING UI
@@ -466,15 +462,16 @@ function handleData(json) {
 window.onload = function() {
   showLoading();
 
-  // 30 saniye timeout
+  // 45 saniye timeout — ilk yuklemede Apps Script yavash olabilir
   var timeout = setTimeout(function() {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⏱️</div>' +
-      '<div style="font-family:DM Mono;font-size:13px">Baglanti zaman asimi (30s)</div>' +
+      '<div style="font-family:DM Mono;font-size:13px">Yuklenemiyor — Tekrar deneyin</div>' +
+      '<div style="font-family:DM Mono;font-size:10px;color:#5a6278;margin-top:6px">Ilk acilista 30-45sn surebilir</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
-  }, 30000);
+  }, 45000);
 
   // JSONP script tag ekle
   var script = document.createElement('script');
