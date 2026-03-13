@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agent Performans Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
@@ -35,11 +35,11 @@
   .topbar-right { display:flex; align-items:center; gap:12px; }
   .week-selector {
     background:var(--surface2); border:1px solid var(--border); color:var(--text);
-    padding:6px 14px; border-radius:6px; font-family:'DM Mono',monospace; font-size:12px;
+    padding:6px 14px; border-radius:6px; font-family:'Space Grotesk',sans-serif; font-size:12px;
     cursor:pointer; outline:none; transition:border-color 0.2s;
   }
   .week-selector:focus { border-color:var(--accent); }
-  .live-badge { display:flex; align-items:center; gap:6px; font-size:11px; font-family:'DM Mono',monospace; color:var(--accent); letter-spacing:1px; }
+  .live-badge { display:flex; align-items:center; gap:6px; font-size:11px; font-family:'Space Grotesk',sans-serif; color:var(--accent); letter-spacing:1px; }
   .live-dot { width:7px; height:7px; border-radius:50%; background:var(--accent); animation:pulse 1.5s infinite; }
   @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(1.4)} }
 
@@ -58,7 +58,7 @@
   .banner-box.fail    { border-top:3px solid var(--danger); }
   .banner-box-title {
     font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase;
-    font-family:'DM Mono',monospace; margin-bottom:12px;
+    font-family:'Space Grotesk',sans-serif; margin-bottom:12px;
   }
   .banner-box.success .banner-box-title { color:var(--accent); }
   .banner-box.fail    .banner-box-title { color:var(--danger); }
@@ -66,7 +66,7 @@
   .banner-agent-row { display:flex; align-items:center; gap:10px; }
   .banner-rank { font-size:16px; }
   .banner-name { font-size:14px; font-weight:800; flex:1; }
-  .banner-score { font-size:14px; font-weight:700; font-family:'DM Mono',monospace; }
+  .banner-score { font-size:14px; font-weight:700; font-family:'Space Grotesk',sans-serif; }
   .banner-box.success .banner-score { color:var(--accent); }
   .banner-box.fail    .banner-score { color:var(--danger); }
 
@@ -81,21 +81,21 @@
   .kpi-card.blue::before  { background:var(--accent2); }
   .kpi-card.orange::before{ background:var(--accent3); }
   .kpi-card.yellow::before{ background:var(--warn); }
-  .kpi-label { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'DM Mono',monospace; margin-bottom:10px; }
+  .kpi-label { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'Space Grotesk',sans-serif; margin-bottom:10px; }
   .kpi-value { font-size:32px; font-weight:800; line-height:1; }
   .kpi-value.green  { color:var(--accent); }
   .kpi-value.blue   { color:var(--accent2); }
   .kpi-value.orange { color:var(--accent3); }
   .kpi-value.yellow { color:var(--warn); }
-  .kpi-sub   { font-size:11px; color:var(--muted); margin-top:6px; font-family:'DM Mono',monospace; }
-  .kpi-delta { font-size:11px; font-family:'DM Mono',monospace; margin-top:4px; }
+  .kpi-sub   { font-size:11px; color:var(--muted); margin-top:6px; font-family:'Space Grotesk',sans-serif; }
+  .kpi-delta { font-size:11px; font-family:'Space Grotesk',sans-serif; margin-top:4px; }
   .kpi-delta.up   { color:var(--accent); }
   .kpi-delta.down { color:var(--danger); }
 
   /* PANELS */
   .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; overflow:hidden; animation:fadeUp 0.6s ease both; }
   .panel-head { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-  .panel-title { font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'DM Mono',monospace; }
+  .panel-title { font-size:12px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'Space Grotesk',sans-serif; }
   .panel-body { padding:20px; }
   .chart-wrap { position:relative; }
 
@@ -104,15 +104,15 @@
   .lb-row { display:grid; grid-template-columns:32px 1fr 80px 80px 60px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); transition:background 0.15s; }
   .lb-row:last-child { border-bottom:none; }
   .lb-row:hover { background:var(--surface2); margin:0 -20px; padding-left:20px; padding-right:20px; }
-  .lb-rank { font-size:11px; font-weight:700; font-family:'DM Mono',monospace; color:var(--muted); }
+  .lb-rank { font-size:11px; font-weight:700; font-family:'Space Grotesk',sans-serif; color:var(--muted); }
   .lb-rank.gold   { color:#ffd700; }
   .lb-rank.silver { color:#c0c0c0; }
   .lb-rank.bronze { color:#cd7f32; }
   .lb-name  { font-size:13px; font-weight:700; }
-  .lb-score { font-size:13px; font-weight:700; font-family:'DM Mono',monospace; text-align:right; }
+  .lb-score { font-size:13px; font-weight:700; font-family:'Space Grotesk',sans-serif; text-align:right; }
   .lb-bar-wrap { height:4px; background:var(--muted2); border-radius:2px; margin:0 8px; }
   .lb-bar { height:4px; border-radius:2px; transition:width 1s ease; }
-  .lb-delta { font-size:10px; font-family:'DM Mono',monospace; text-align:right; }
+  .lb-delta { font-size:10px; font-family:'Space Grotesk',sans-serif; text-align:right; }
   .lb-delta.up   { color:var(--accent); }
   .lb-delta.down { color:var(--danger); }
   .lb-delta.same { color:var(--muted); }
@@ -121,7 +121,7 @@
   .agent-tabs { display:flex; gap:6px; flex-wrap:wrap; padding:16px 20px; border-bottom:1px solid var(--border); }
   .agent-tab {
     padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700;
-    font-family:'DM Mono',monospace; cursor:pointer; border:1px solid var(--border);
+    font-family:'Space Grotesk',sans-serif; cursor:pointer; border:1px solid var(--border);
     background:var(--surface2); color:var(--muted); transition:all 0.2s;
   }
   .agent-tab:hover { border-color:var(--accent); color:var(--accent); }
@@ -130,7 +130,7 @@
   /* METRIC PILLS */
   .metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .metric-item { background:var(--surface2); border-radius:8px; padding:12px 14px; border:1px solid var(--border); }
-  .metric-item-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'DM Mono',monospace; margin-bottom:4px; }
+  .metric-item-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'Space Grotesk',sans-serif; margin-bottom:4px; }
   .metric-item-val { font-size:20px; font-weight:800; }
 
   /* CHANGE CARDS */
@@ -140,12 +140,12 @@
   .change-card.down { border-left:3px solid var(--danger); }
   .change-card.same { border-left:3px solid var(--muted); }
   .change-name   { font-size:13px; font-weight:700; margin-bottom:4px; }
-  .change-detail { font-size:10px; font-family:'DM Mono',monospace; color:var(--muted); }
+  .change-detail { font-size:10px; font-family:'Space Grotesk',sans-serif; color:var(--muted); }
   .change-arrow  { font-size:18px; float:right; }
 
   /* HEATMAP — sabit isim sütunu */
   .heatmap-wrap { overflow-x:auto; position:relative; }
-  .heatmap-table { border-collapse:collapse; font-family:'DM Mono',monospace; font-size:10px; }
+  .heatmap-table { border-collapse:collapse; font-family:'Space Grotesk',sans-serif; font-size:10px; }
   .heatmap-table th { padding:6px 10px; color:var(--muted); font-weight:600; letter-spacing:1px; text-align:center; white-space:nowrap; background:var(--surface); }
   .heatmap-table th.sticky-col { position:sticky; left:0; z-index:2; text-align:left; background:var(--surface); border-right:1px solid var(--border); }
   .heatmap-table td { padding:5px 8px; text-align:center; border-radius:3px; cursor:default; transition:transform 0.1s; font-size:11px; font-weight:700; white-space:nowrap; }
@@ -153,7 +153,7 @@
   .heatmap-table td.sticky-col { position:sticky; left:0; z-index:1; text-align:left; color:var(--text); font-weight:700; font-size:12px; padding-right:14px; background:var(--surface); border-right:1px solid var(--border); }
 
   @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  .footer { text-align:center; padding:24px; color:var(--muted); font-size:10px; font-family:'DM Mono',monospace; letter-spacing:1px; border-top:1px solid var(--border); margin-top:12px; }
+  .footer { text-align:center; padding:24px; color:var(--muted); font-size:10px; font-family:'Space Grotesk',sans-serif; letter-spacing:1px; border-top:1px solid var(--border); margin-top:12px; }
 
   @media(max-width:1100px) { .grid-main{grid-template-columns:1fr} .grid-2{grid-template-columns:1fr} .kpi-row{grid-template-columns:1fr 1fr} .banner-row{grid-template-columns:1fr} }
   @media(max-width:600px)  { .main{padding:16px} .kpi-row{grid-template-columns:1fr} .change-row{grid-template-columns:1fr} }
@@ -164,7 +164,7 @@
 <!-- LOADING -->
 <div id="loadingOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(10,12,16,0.95);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="width:48px;height:48px;border:3px solid #1e2430;border-top-color:#00e5a0;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-  <div style="font-family:'DM Mono',monospace;font-size:12px;color:#5a6278;letter-spacing:2px">GOOGLE SHEETS'TEN VERİ YÜKLENIYOR...</div>
+  <div style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:#5a6278;letter-spacing:2px">GOOGLE SHEETS'TEN VERİ YÜKLENIYOR...</div>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
@@ -226,7 +226,7 @@
     </div>
   </div>
 
-  <!-- SIRALAMA + RADAR -->
+  <!-- SIRALAMA + DEĞİŞİMLER -->
   <div class="grid-2" style="margin-bottom:20px">
     <div class="panel">
       <div class="panel-head"><span class="panel-title">🏆 Sıralama</span></div>
@@ -235,15 +235,18 @@
       </div>
     </div>
     <div class="panel">
-      <div class="panel-head"><span class="panel-title">🎯 Agent Metrik Profili (Radar)</span></div>
-      <div class="agent-tabs" id="radarTabs"></div>
+      <div class="panel-head"><span class="panel-title">📅 Bu Hafta Değişimler</span></div>
       <div class="panel-body">
-        <div class="chart-wrap" style="height:280px"><canvas id="radarChart"></canvas></div>
+        <div class="change-row" id="changeCards"></div>
+        <div style="margin-top:16px">
+          <div class="panel-title" style="margin-bottom:10px">📌 Haftalık Özet Metrikler</div>
+          <div class="metric-grid" id="metricGrid"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- BAR + METRIKLER -->
+  <!-- BAR + RADAR -->
   <div class="grid-2" style="margin-bottom:20px">
     <div class="panel">
       <div class="panel-head">
@@ -262,18 +265,24 @@
       </div>
     </div>
     <div class="panel">
-      <div class="panel-head"><span class="panel-title">📅 Bu Hafta Değişimler</span></div>
+      <div class="panel-head"><span class="panel-title">🎯 Agent Metrik Profili (Radar)</span></div>
+      <div class="agent-tabs" id="radarTabs"></div>
       <div class="panel-body">
-        <div class="change-row" id="changeCards"></div>
-        <div style="margin-top:16px">
-          <div class="panel-title" style="margin-bottom:10px">📌 Haftalık Özet Metrikler</div>
-          <div class="metric-grid" id="metricGrid"></div>
-        </div>
+        <div class="chart-wrap" style="height:280px"><canvas id="radarChart"></canvas></div>
       </div>
     </div>
   </div>
 
-  <!-- TREND — TAM GENİŞLİK -->
+  <!-- SIRALAMA TRENDİ — TAM GENİŞLİK -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-head"><span class="panel-title">📊 Haftalık Sıralama Trendi (Tüm Sezonlar)</span></div>
+    <div class="agent-tabs" id="agentTabs2"></div>
+    <div class="panel-body">
+      <div class="chart-wrap" style="height:280px"><canvas id="rankChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- PUAN TRENDİ — TAM GENİŞLİK -->
   <div class="panel" style="margin-bottom:20px">
     <div class="panel-head"><span class="panel-title">📈 Haftalık Puan Trendi (Tüm Sezonlar)</span></div>
     <div class="agent-tabs" id="agentTabs"></div>
@@ -322,7 +331,7 @@ var AGENTS_CORE = [];
 var currentWeek = '';
 var radarAgent = '';
 var activeAgents = new Set();
-var trendChart, radarChart, barChart;
+var trendChart, rankChart, radarChart, barChart;
 
 // ============================================================
 // LOADING
@@ -384,8 +393,10 @@ function handleData(json) {
     ws.value = currentWeek;
 
     buildAgentTabs();
+    buildAgentTabs2();
     buildRadarTabs();
     initTrendChart();
+    initRankChart();
     initRadarChart();
     initBarChart();
     updateAll();
@@ -396,7 +407,7 @@ function handleData(json) {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
-      '<div style="font-family:DM Mono;font-size:13px">Hata: ' + msg + '</div>' +
+      '<div style="font-family:'Space Grotesk';font-size:13px">Hata: ' + msg + '</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
   }
@@ -408,8 +419,8 @@ window.onload = function() {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⏱️</div>' +
-      '<div style="font-family:DM Mono;font-size:13px">Yuklenemiyor — Tekrar deneyin</div>' +
-      '<div style="font-size:10px;color:#5a6278;margin-top:6px;font-family:DM Mono">Ilk acilista 30-45sn surebilir</div>' +
+      '<div style="font-family:'Space Grotesk';font-size:13px">Yuklenemiyor — Tekrar deneyin</div>' +
+      '<div style="font-size:10px;color:#5a6278;margin-top:6px;font-family:'Space Grotesk'">Ilk acilista 30-45sn surebilir</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
   }, 45000);
@@ -421,7 +432,7 @@ window.onload = function() {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
-      '<div style="font-family:DM Mono;font-size:13px">Script yuklenemedi</div>' +
+      '<div style="font-family:'Space Grotesk';font-size:13px">Script yuklenemedi</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
   };
@@ -434,6 +445,7 @@ function updateAll() {
   updateKPIs();
   updateLeaderboard();
   updateTrendChart();
+  updateRankChart();
   updateBarChart();
   updateHeatmap();
   updateChangeCards();
@@ -577,8 +589,8 @@ function initTrendChart() {
       responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ display:false } },
       scales:{
-        x:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'DM Mono',size:10}} },
-        y:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'DM Mono',size:10}} }
+        x:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'Space Grotesk',size:10}} },
+        y:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'Space Grotesk',size:10}} }
       },
       animation:{ duration:400 },
       elements:{ line:{tension:0.4}, point:{radius:3} }
@@ -587,7 +599,8 @@ function initTrendChart() {
 }
 
 function updateTrendChart() {
-  var weeks = Object.keys(WEEKS_DATA).reverse();
+  // Eskiden yeniye: en eski solda, en yeni sağda
+  var weeks = Object.keys(WEEKS_DATA);
   var trendFiltered = AGENTS_CORE.filter(function(a) {
     return TREND_AGENTS.indexOf(a) !== -1 && activeAgents.has(a);
   });
@@ -604,7 +617,87 @@ function updateTrendChart() {
 }
 
 // ============================================================
-// RADAR CHART — Düzeltilmiş versiyon
+// SIRALAMA TREND CHART
+// ============================================================
+var activeAgents2 = new Set();
+
+function buildAgentTabs2() {
+  var tabs = document.getElementById('agentTabs2');
+  tabs.innerHTML = '';
+  var trendFiltered = AGENTS_CORE.filter(function(a) {
+    return TREND_AGENTS.indexOf(a) !== -1;
+  });
+  // Varsayılan olarak aynı agentları seç
+  activeAgents2 = new Set(Array.from(activeAgents));
+  trendFiltered.forEach(function(a) {
+    var t = document.createElement('div');
+    var isActive = activeAgents2.has(a);
+    t.className = 'agent-tab' + (isActive?' active':'');
+    t.textContent = a;
+    if(isActive){ t.style.background=COLORS[a]; t.style.color='#000'; t.style.borderColor=COLORS[a]; }
+    t.onclick = function() {
+      if(activeAgents2.has(a) && activeAgents2.size > 1) {
+        activeAgents2.delete(a);
+        t.classList.remove('active'); t.style.background=''; t.style.color=''; t.style.borderColor='';
+      } else {
+        activeAgents2.add(a);
+        t.classList.add('active'); t.style.background=COLORS[a]; t.style.color='#000'; t.style.borderColor=COLORS[a];
+      }
+      updateRankChart();
+    };
+    tabs.appendChild(t);
+  });
+}
+
+function initRankChart() {
+  var ctx = document.getElementById('rankChart').getContext('2d');
+  rankChart = new Chart(ctx, {
+    type:'line', data:{ labels:[], datasets:[] },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'Space Grotesk',size:10}} },
+        y:{
+          grid:{color:'#1e2430'},
+          ticks:{
+            color:'#5a6278', font:{family:'Space Grotesk',size:10},
+            // Sıralama: 1 en üstte olmalı, yani y ekseni ters
+            callback: function(val) { return '#' + val; }
+          },
+          reverse: true,  // 1. sıra yukarıda
+          min: 1
+        }
+      },
+      animation:{ duration:400 },
+      elements:{ line:{tension:0.4}, point:{radius:3} }
+    }
+  });
+  updateRankChart();
+}
+
+function updateRankChart() {
+  var weeks = Object.keys(WEEKS_DATA);
+  var trendFiltered = AGENTS_CORE.filter(function(a) {
+    return TREND_AGENTS.indexOf(a) !== -1 && activeAgents2.has(a);
+  });
+  var datasets = trendFiltered.map(function(a) {
+    var data = weeks.map(function(w) {
+      var sorted = WEEKS_DATA[w].slice().sort(function(x,y){ return y.puan - x.puan; });
+      var idx = sorted.findIndex(function(d){ return d.isim === a; });
+      return idx !== -1 ? idx + 1 : null;  // 1-bazlı sıralama
+    });
+    return { label:a, data:data, borderColor:COLORS[a], backgroundColor:COLORS[a]+'22', fill:false, borderWidth:2, pointBackgroundColor:COLORS[a] };
+  });
+  rankChart.data.labels = weeks.map(function(w){ return w.split(' ')[0]; });
+  rankChart.data.datasets = datasets;
+  rankChart.update();
+}
+
+// ============================================================
+// PUAN TREND CHART
+// ============================================================
+
 // ============================================================
 function buildRadarTabs() {
   var tabs = document.getElementById('radarTabs');
@@ -640,8 +733,8 @@ function initRadarChart() {
         r:{
           min:0, max:100,
           grid:{color:'#1e2430'}, angleLines:{color:'#1e2430'},
-          ticks:{color:'#5a6278', backdropColor:'transparent', font:{family:'DM Mono',size:9}, stepSize:20},
-          pointLabels:{color:'#8892a4', font:{size:10, family:'DM Mono'}}
+          ticks:{color:'#5a6278', backdropColor:'transparent', font:{family:'Space Grotesk',size:9}, stepSize:20},
+          pointLabels:{color:'#8892a4', font:{size:10, family:'Space Grotesk'}}
         }
       }
     }
@@ -712,7 +805,7 @@ function initBarChart() {
       responsive:true, maintainAspectRatio:false, indexAxis:'y',
       plugins:{ legend:{ display:false } },
       scales:{
-        x:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'DM Mono',size:10}} },
+        x:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'Space Grotesk',size:10}} },
         y:{ grid:{display:false}, ticks:{color:'#e8eaf0', font:{size:12,family:'Syne',weight:'700'}} }
       },
       animation:{ duration:400 }
@@ -812,7 +905,7 @@ function updateChangeCards() {
   var weeks = Object.keys(WEEKS_DATA);
   var idx = weeks.indexOf(currentWeek);
   if(idx >= weeks.length-1) {
-    document.getElementById('changeCards').innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:DM Mono">Önceki hafta verisi yok</div>';
+    document.getElementById('changeCards').innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:'Space Grotesk'">Önceki hafta verisi yok</div>';
     return;
   }
   var cur = WEEKS_DATA[currentWeek];
