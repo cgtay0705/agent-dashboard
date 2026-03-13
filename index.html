@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Agent Performans Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@400;600;700;800&family=Nunito:wght@800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
@@ -66,7 +66,7 @@
   .banner-agent-row { display:flex; align-items:center; gap:10px; }
   .banner-rank { font-size:16px; }
   .banner-name { font-size:14px; font-weight:800; flex:1; }
-  .banner-score { font-size:14px; font-weight:700; font-family:'Space Grotesk',sans-serif; }
+  .banner-score { font-size:16px; font-weight:900; font-family:'Nunito',sans-serif; }
   .banner-box.success .banner-score { color:var(--accent); }
   .banner-box.fail    .banner-score { color:var(--danger); }
 
@@ -82,7 +82,7 @@
   .kpi-card.orange::before{ background:var(--accent3); }
   .kpi-card.yellow::before{ background:var(--warn); }
   .kpi-label { font-size:10px; font-weight:600; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'Space Grotesk',sans-serif; margin-bottom:10px; }
-  .kpi-value { font-size:32px; font-weight:800; line-height:1; }
+  .kpi-value { font-size:36px; font-weight:900; line-height:1; font-family:'Nunito',sans-serif; letter-spacing:-1px; }
   .kpi-value.green  { color:var(--accent); }
   .kpi-value.blue   { color:var(--accent2); }
   .kpi-value.orange { color:var(--accent3); }
@@ -311,10 +311,10 @@
 var API_URL = 'https://script.google.com/macros/s/AKfycbzDAYvsa8bbVXGos5T1auWbZpMDDcO1netBR8ZYxsUIIfKmqNSBHtQ0sQZ3M6zzX4lXQw/exec';
 
 // Trend grafiğinde gösterilecek agentlar (o haftada yoksa otomatik çıkar)
-var TREND_AGENTS = ['Beril','Sule','Berke','Aras','Mira','Han','Acelya','Bengu','Sencer','Demir','Cenkay','Irem','Riva','Necip'];
+var TREND_AGENTS = ['Beril','Şule','Berke','Aras','Mira','Han','Açelya','Bengü','Sencer','Demir','Cenkay','İrem','Riva','Necip'];
 
 // Heatmap + Radar'da gösterilecek sabit liste
-var HEATMAP_AGENTS = ['Beril','Sule','Berke','Aras','Mira','Han','Acelya','Bengu','Sencer','Demir','Cenkay','Irem','Riva','Necip'];
+var HEATMAP_AGENTS = ['Beril','Şule','Berke','Aras','Mira','Han','Açelya','Bengü','Sencer','Demir','Cenkay','İrem','Riva','Necip'];
 
 var COLOR_PALETTE = [
   '#00e5a0','#0099ff','#ff6b35','#ffcc00','#c471ed',
@@ -477,7 +477,7 @@ function updateKPIs() {
 
   // Banner — En kötü 3 (sondan 1, 2, 3)
   var worstHtml = '';
-  var worstIcons = ['📉','⚠️','🔻'];
+  var worstIcons = ['📉','⚠️','⚠️'];
   var worstLabels = ['Sondan 3.','Sondan 2.','Sonuncu'];
   for(var j=0; j<Math.min(3,sorted.length); j++) {
     // j=0 → sondan 3., j=1 → sondan 2., j=2 → sonuncu (en kötü en altta)
@@ -910,20 +910,42 @@ function updateChangeCards() {
   }
   var cur = WEEKS_DATA[currentWeek];
   var prev = WEEKS_DATA[weeks[idx+1]];
-  var changes = cur.map(function(d) {
-    var p = prev.find(function(x){ return x.isim===d.isim; });
-    var diff = p ? d.puan - p.puan : 0;
-    return { isim:d.isim, puan:d.puan, diff:diff };
-  }).sort(function(a,b){ return Math.abs(b.diff)-Math.abs(a.diff); }).slice(0,6);
+
+  // Bu haftaki ve önceki haftaki sıralamalar
+  var curSorted  = cur.slice().sort(function(a,b){ return b.puan - a.puan; });
+  var prevSorted = prev.slice().sort(function(a,b){ return b.puan - a.puan; });
+
+  // Bu hafta son 3'teki agentlar
+  var curBottom3  = curSorted.slice(-3).map(function(d){ return d.isim; });
+  // Geçen hafta son 3'teki agentlar
+  var prevBottom3 = prevSorted.slice(-3).map(function(d){ return d.isim; });
+
+  // İkisinin birleşimi (tekrar olmadan)
+  var targetAgents = [];
+  curBottom3.concat(prevBottom3).forEach(function(name) {
+    if(targetAgents.indexOf(name) === -1) targetAgents.push(name);
+  });
+
+  var changes = targetAgents.map(function(name) {
+    var curRank  = curSorted.findIndex(function(d){ return d.isim === name; });
+    var prevRank = prevSorted.findIndex(function(d){ return d.isim === name; });
+    var curRankNum  = curRank  !== -1 ? curRank  + 1 : null;
+    var prevRankNum = prevRank !== -1 ? prevRank + 1 : null;
+    // Sıralama iyileşmesi = numara küçüldü (pozitif)
+    var diff = (prevRankNum && curRankNum) ? prevRankNum - curRankNum : 0;
+    return { isim:name, curRank:curRankNum, prevRank:prevRankNum, diff:diff };
+  });
 
   document.getElementById('changeCards').innerHTML = changes.map(function(d) {
     var cls = d.diff>0?'up':d.diff<0?'down':'same';
     var arrow = d.diff>0?'↑':d.diff<0?'↓':'→';
     var sign = d.diff>0?'+':'';
+    var rankText = d.curRank ? '#'+d.curRank : '—';
+    var diffText = d.prevRank ? sign+d.diff+' sıra' : 'Yeni';
     return '<div class="change-card '+cls+'">'+
       '<span class="change-arrow">'+arrow+'</span>'+
       '<div class="change-name">'+d.isim+'</div>'+
-      '<div class="change-detail">'+d.puan+' puan • '+sign+d.diff+'</div>'+
+      '<div class="change-detail">'+rankText+'. sıra • '+diffText+'</div>'+
       '</div>';
   }).join('');
 }
@@ -934,16 +956,18 @@ function updateChangeCards() {
 function updateMetricGrid() {
   var data = WEEKS_DATA[currentWeek];
   if(!data) return;
-  var avgKarsilama = (data.reduce(function(s,d){ return s+d.karsilama; },0)/data.length).toFixed(1);
+  var avgKarsilama = Math.round(data.reduce(function(s,d){ return s+d.karsilama; },0)/data.length);
   var avgOrt = Math.round(data.reduce(function(s,d){ return s+d.ortChat; },0)/data.length);
   var totalCevapsiz = data.reduce(function(s,d){ return s+d.cevapsiz; },0);
   var avgSaatBasi = (data.reduce(function(s,d){ return s+d.saatBasi; },0)/data.length).toFixed(1);
+  var avgChat = Math.round(data.reduce(function(s,d){ return s+d.chat; },0)/data.length);
   var cevapsizColor = totalCevapsiz===0?'var(--accent)':'var(--danger)';
   document.getElementById('metricGrid').innerHTML =
-    '<div class="metric-item"><div class="metric-item-label">Ort. Karşılama Sn</div><div class="metric-item-val" style="color:var(--accent2)">'+avgKarsilama+'s</div></div>'+
-    '<div class="metric-item"><div class="metric-item-label">Ort. Chat Süresi</div><div class="metric-item-val" style="color:var(--accent3)">'+avgOrt+'s</div></div>'+
+    '<div class="metric-item" style="grid-column:1/-1;border-left:3px solid var(--accent2)"><div class="metric-item-label">Ort. Toplam Chat</div><div class="metric-item-val" style="color:var(--accent2)">'+avgChat+' chat</div></div>'+
+    '<div class="metric-item"><div class="metric-item-label">Karşılama Süresi</div><div class="metric-item-val" style="color:var(--accent2)">'+avgKarsilama+' saniye</div></div>'+
+    '<div class="metric-item"><div class="metric-item-label">Ort. Chat Süresi</div><div class="metric-item-val" style="color:var(--accent3)">'+avgOrt+' saniye</div></div>'+
     '<div class="metric-item"><div class="metric-item-label">Toplam Cevapsız</div><div class="metric-item-val" style="color:'+cevapsizColor+'">'+totalCevapsiz+'</div></div>'+
-    '<div class="metric-item"><div class="metric-item-label">Ort. Saat/Chat</div><div class="metric-item-val" style="color:var(--warn)">'+avgSaatBasi+'</div></div>';
+    '<div class="metric-item"><div class="metric-item-label">Verimlilik</div><div class="metric-item-val" style="color:var(--warn)">'+avgSaatBasi+'</div></div>';
 }
 </script>
 </body>
