@@ -843,11 +843,21 @@ function initRankChart() {
           ticks:{
             color:'#5a6278', font:{family:'Space Grotesk',size:10},
             stepSize: 1,
-            callback: function(val) { return (Number.isInteger(val) && val >= 1 && val <= 18) ? '#' + val : ''; }
+            includeBounds: false,
+            callback: function(val) {
+              if(val === Math.floor(val) && val >= 1 && val <= 18) return '#' + val;
+              return '';
+            }
           },
           reverse: true,
           min: 0.5,
-          max: 18.5
+          max: 18.5,
+          afterBuildTicks: function(axis) {
+            axis.ticks = [];
+            for(var i = 1; i <= 18; i++) {
+              axis.ticks.push({ value: i });
+            }
+          }
         }
       },
       animation:{ duration:400 },
@@ -930,42 +940,71 @@ function normalizeMetric(val, min, max, invert) {
 }
 
 function updateRadarChart() {
-  // Seçili agent bu haftada yoksa tüm haftalarda ara
   var agent = null;
-  var searchWeeks = Object.keys(WEEKS_DATA);
-  // Önce mevcut haftada ara
   var curData = WEEKS_DATA[currentWeek];
   if(curData) agent = curData.find(function(d){ return d.isim===radarAgent; });
-  // Bulunamazsa diğer haftalarda ara
   if(!agent) {
+    var searchWeeks = Object.keys(WEEKS_DATA);
     for(var wi=0; wi<searchWeeks.length; wi++) {
       agent = WEEKS_DATA[searchWeeks[wi]].find(function(d){ return d.isim===radarAgent; });
-      if(agent) break;
+      if(agent) { curData = WEEKS_DATA[searchWeeks[wi]]; break; }
     }
   }
-  if(!agent) return;
+  if(!agent || !curData) return;
 
-  // Tüm haftaların verisinden dinamik min/max hesapla
-  var allData = [];
-  searchWeeks.forEach(function(w){ allData = allData.concat(WEEKS_DATA[w]); });
+  // Seçili haftanın min/max değerleri
+  function wMin(k) { return Math.min.apply(null, curData.map(function(d){ return d[k]; })); }
+  function wMax(k) { return Math.max.apply(null, curData.map(function(d){ return d[k]; })); }
 
-  function dynMin(k) { return Math.min.apply(null, allData.map(function(d){ return d[k]; })); }
-  function dynMax(k) { return Math.max.apply(null, allData.map(function(d){ return d[k]; })); }
+  // Min-Max normalizasyon — normal ve ters
+  function norm(val, min, max)        { return max===min ? 0 : (val-min)/(max-min)*100; }
+  function normInv(val, min, max)     { return max===min ? 0 : (max-val)/(max-min)*100; }
 
-  // Puan da radar'a ekle — en güvenilir veri
+  // Ağırlıklar (toplam %100)
+  var W = {
+    saatBasi:   0.20,
+    karsilama:  0.20,
+    chat:       0.15,
+    uyeSoru:    0.15,
+    ortChat:    0.10,
+    memnuniyet: 0.10,
+    cevapsiz:   0.10
+  };
+
+  // Her metriğin normalize değeri (0-100) — radar eksenleri bu değerleri gösterir
+  // Ağırlık etiketlerde belirtilmiş, görsel büyüklük normalize değeriyle orantılı
   var scores = [
-    normalizeMetric(agent.saatBasi,   dynMin('saatBasi'),   dynMax('saatBasi'),   false),
-    normalizeMetric(agent.memnuniyet, dynMin('memnuniyet'), dynMax('memnuniyet'), false),
-    normalizeMetric(agent.chat,       dynMin('chat'),       dynMax('chat'),       false),
-    normalizeMetric(agent.karsilama,  dynMin('karsilama'),  dynMax('karsilama'),  true),
-    normalizeMetric(agent.uyeSoru,    dynMin('uyeSoru'),    dynMax('uyeSoru'),    true),
-    normalizeMetric(agent.ortChat,    dynMin('ortChat'),    dynMax('ortChat'),    true),
-    normalizeMetric(agent.puan,       dynMin('puan'),       dynMax('puan'),       false),
+    norm(agent.saatBasi,     wMin('saatBasi'),   wMax('saatBasi')),    // %20
+    norm(agent.memnuniyet,   wMin('memnuniyet'), wMax('memnuniyet')),  // %10
+    norm(agent.chat,         wMin('chat'),       wMax('chat')),        // %15
+    normInv(agent.karsilama, wMin('karsilama'),  wMax('karsilama')),   // %20
+    normInv(agent.uyeSoru,   wMin('uyeSoru'),    wMax('uyeSoru')),     // %15
+    normInv(agent.ortChat,   wMin('ortChat'),    wMax('ortChat')),     // %10
+    normInv(agent.cevapsiz,  wMin('cevapsiz'),   wMax('cevapsiz')),    // %10
   ];
 
-  radarChart.data.labels = ['Saat Başı Chat','Memnuniyet','Toplam Chat','Karşılama Hızı','Soru Hızı','Chat Hızı','Puan'];
+  // Toplam ağırlıklı puan (0-100 arası) — tooltip'te göster
+  var totalScore = (
+    norm(agent.saatBasi,     wMin('saatBasi'),   wMax('saatBasi'))   * W.saatBasi   +
+    norm(agent.memnuniyet,   wMin('memnuniyet'), wMax('memnuniyet')) * W.memnuniyet +
+    norm(agent.chat,         wMin('chat'),       wMax('chat'))       * W.chat       +
+    normInv(agent.karsilama, wMin('karsilama'),  wMax('karsilama'))  * W.karsilama  +
+    normInv(agent.uyeSoru,   wMin('uyeSoru'),    wMax('uyeSoru'))    * W.uyeSoru    +
+    normInv(agent.ortChat,   wMin('ortChat'),    wMax('ortChat'))    * W.ortChat    +
+    normInv(agent.cevapsiz,  wMin('cevapsiz'),   wMax('cevapsiz'))   * W.cevapsiz
+  ).toFixed(1);
+
+  radarChart.data.labels = [
+    'Saat Başı Chat (%20)',
+    'Memnuniyet (%10)',
+    'Toplam Chat (%15)',
+    'Karşılama Hızı (%20)',
+    'Soru Hızı (%15)',
+    'Chat Hızı (%10)',
+    'Cevapsız (%10)'
+  ];
   radarChart.data.datasets = [{
-    label: radarAgent,
+    label: radarAgent + ' — Skor: ' + totalScore,
     data: scores,
     borderColor: COLORS[radarAgent] || '#00e5a0',
     backgroundColor: (COLORS[radarAgent] || '#00e5a0') + '33',
