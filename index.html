@@ -65,7 +65,7 @@
   .banner-agents { display:flex; flex-direction:column; gap:8px; }
   .banner-agent-row { display:flex; align-items:center; gap:10px; }
   .banner-rank { font-size:16px; }
-  .banner-name { font-size:14px; font-weight:800; flex:1; }
+  .banner-name { font-size:14px; font-weight:900; flex:1; font-family:'Nunito',sans-serif; }
   .banner-score { font-size:16px; font-weight:900; font-family:'Nunito',sans-serif; }
   .banner-box.success .banner-score { color:var(--accent); }
   .banner-box.fail    .banner-score { color:var(--danger); }
@@ -108,8 +108,8 @@
   .lb-rank.gold   { color:#ffd700; }
   .lb-rank.silver { color:#c0c0c0; }
   .lb-rank.bronze { color:#cd7f32; }
-  .lb-name  { font-size:13px; font-weight:700; }
-  .lb-score { font-size:13px; font-weight:700; font-family:'Space Grotesk',sans-serif; text-align:right; }
+  .lb-name  { font-size:13px; font-weight:700; font-family:'Nunito',sans-serif; }
+  .lb-score { font-size:13px; font-weight:900; font-family:'Nunito',sans-serif; text-align:right; }
   .lb-bar-wrap { height:4px; background:var(--muted2); border-radius:2px; margin:0 8px; }
   .lb-bar { height:4px; border-radius:2px; transition:width 1s ease; }
   .lb-delta { font-size:10px; font-family:'Space Grotesk',sans-serif; text-align:right; }
@@ -131,7 +131,7 @@
   .metric-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .metric-item { background:var(--surface2); border-radius:8px; padding:12px 14px; border:1px solid var(--border); }
   .metric-item-label { font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); font-family:'Space Grotesk',sans-serif; margin-bottom:4px; }
-  .metric-item-val { font-size:20px; font-weight:800; }
+  .metric-item-val { font-size:20px; font-weight:900; font-family:'Nunito',sans-serif; }
 
   /* CHANGE CARDS */
   .change-row { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
@@ -139,7 +139,7 @@
   .change-card.up   { border-left:3px solid var(--accent); }
   .change-card.down { border-left:3px solid var(--danger); }
   .change-card.same { border-left:3px solid var(--muted); }
-  .change-name   { font-size:13px; font-weight:700; margin-bottom:4px; }
+  .change-name   { font-size:13px; font-weight:900; font-family:'Nunito',sans-serif; margin-bottom:4px; }
   .change-detail { font-size:10px; font-family:'Space Grotesk',sans-serif; color:var(--muted); }
   .change-arrow  { font-size:18px; float:right; }
 
@@ -305,6 +305,154 @@
 <div class="footer">AGENT PERFORMANS DASHBOARD — CANLI VERİ: GOOGLE SHEETS — © 2025</div>
 
 <script>
+
+// ============================================================
+// AY / YIL BANT PLUGIN — Trend ve Rank chartlar için
+// ============================================================
+var TR_MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+function parseWeekLabel(lbl) {
+  // "7-13 Ekim", "14-20 Ekim", "2-8 Mart" gibi formatlarda ay adını bul
+  if(!lbl) return { month:null, year:null };
+  for(var m=0; m<TR_MONTHS.length; m++) {
+    if(lbl.indexOf(TR_MONTHS[m]) !== -1) {
+      // Yılı bulmaya çalış (label içinde geçmiyorsa tarih aralığından tahmin et)
+      var yearMatch = lbl.match(/\b(202[0-9])\b/);
+      var year = yearMatch ? parseInt(yearMatch[1]) : null;
+      return { month:m, monthName:TR_MONTHS[m], year:year };
+    }
+  }
+  return { month:null, year:null };
+}
+
+function inferYears(weeks) {
+  // Hafta isimlerinden yıl çıkar; "23-29 Aralık" 2025, ondan sonrası 2026 varsayımı
+  var years = [];
+  var currentYear = 2025;
+  for(var i=0; i<weeks.length; i++) {
+    var info = parseWeekLabel(weeks[i]);
+    // "Aralık" haftasının ardından yıl değişir
+    if(i > 0) {
+      var prev = parseWeekLabel(weeks[i-1]);
+      if(prev.month === 11 && info.month !== null && info.month < 11) {
+        currentYear = 2026;
+      }
+    }
+    years.push(currentYear);
+  }
+  return years;
+}
+
+var monthYearBandsPlugin = {
+  id: 'monthYearBands',
+  afterDraw: function(chart) {
+    var labels = chart.data.labels;
+    if(!labels || labels.length === 0) return;
+    var xScale = chart.scales['x'];
+    var yScale = chart.scales['y'];
+    if(!xScale || !yScale) return;
+
+    var ctx = chart.ctx;
+    var chartArea = chart.chartArea;
+    var bottom = chartArea.bottom;
+
+    // Hafta bilgilerini çıkar
+    var weekInfos = labels.map(function(lbl) { return parseWeekLabel(lbl); });
+    var years = inferYears(labels);
+    weekInfos.forEach(function(wi, i) { wi.year = years[i]; });
+
+    // Her etiketin x pozisyonu
+    var positions = labels.map(function(_, i) {
+      return xScale.getPixelForTick(i);
+    });
+
+    var bandH = 18;  // ay bandı yüksekliği
+    var yearH = 16;  // yıl bandı yüksekliği
+    var gap = 2;
+    var ayTop  = bottom + gap;
+    var yilTop = ayTop + bandH + gap;
+
+    ctx.save();
+    ctx.font = '600 10px Space Grotesk, sans-serif';
+    ctx.textBaseline = 'middle';
+
+    // --- AY BANTLARI ---
+    var monthGroups = [];
+    var curMonth = null, curYear = null, groupStart = 0;
+    for(var i=0; i<=weekInfos.length; i++) {
+      var wi = weekInfos[i] || {};
+      var key = wi.month + '_' + wi.year;
+      if(i === 0) { curMonth = wi.month; curYear = wi.year; groupStart = 0; continue; }
+      if(wi.month !== curMonth || wi.year !== curYear || i === weekInfos.length) {
+        monthGroups.push({ month: weekInfos[groupStart].month, monthName: weekInfos[groupStart].monthName, year: curYear, from: groupStart, to: i-1 });
+        curMonth = wi.month; curYear = wi.year; groupStart = i;
+      }
+    }
+
+    var halfTick = positions.length > 1 ? (positions[1] - positions[0]) / 2 : 0;
+
+    monthGroups.forEach(function(g) {
+      var x1 = (positions[g.from] || chartArea.left) - halfTick;
+      var x2 = (positions[g.to]   || chartArea.right) + halfTick;
+      x1 = Math.max(x1, chartArea.left);
+      x2 = Math.min(x2, chartArea.right);
+
+      ctx.fillStyle = '#1e2430';
+      ctx.beginPath();
+      ctx.rect(x1+1, ayTop, x2-x1-2, bandH);
+      ctx.fill();
+
+      ctx.strokeStyle = '#2e3450';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x1+1, ayTop, x2-x1-2, bandH);
+
+      ctx.fillStyle = '#8892a4';
+      ctx.textAlign = 'center';
+      var label = g.monthName || '';
+      var avail = x2 - x1 - 6;
+      // Çok dar ise kısalt
+      if(avail < 40 && label.length > 3) label = label.substring(0,3);
+      if(avail > 8) ctx.fillText(label, (x1+x2)/2, ayTop + bandH/2);
+    });
+
+    // --- YIL BANTLARI ---
+    var yearGroups = [];
+    var cy = null, gy = 0;
+    for(var j=0; j<=weekInfos.length; j++) {
+      var y = years[j];
+      if(j === 0) { cy = y; gy = 0; continue; }
+      if(y !== cy || j === weekInfos.length) {
+        yearGroups.push({ year: cy, from: gy, to: j-1 });
+        cy = y; gy = j;
+      }
+    }
+
+    yearGroups.forEach(function(g) {
+      var x1 = (positions[g.from] || chartArea.left) - halfTick;
+      var x2 = (positions[g.to]   || chartArea.right) + halfTick;
+      x1 = Math.max(x1, chartArea.left);
+      x2 = Math.min(x2, chartArea.right);
+
+      ctx.fillStyle = '#111318';
+      ctx.beginPath();
+      ctx.rect(x1+1, yilTop, x2-x1-2, yearH);
+      ctx.fill();
+
+      ctx.strokeStyle = '#ABF625';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x1+1, yilTop, x2-x1-2, yearH);
+
+      ctx.fillStyle = '#ABF625';
+      ctx.textAlign = 'center';
+      if(x2-x1 > 12) ctx.fillText(String(g.year), (x1+x2)/2, yilTop + yearH/2);
+    });
+
+    ctx.restore();
+  }
+};
+
+Chart.register(monthYearBandsPlugin);
+
 // ============================================================
 // CONFIG
 // ============================================================
@@ -587,9 +735,20 @@ function initTrendChart() {
     type:'line', data:{ labels:[], datasets:[] },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
+      layout:{ padding:{ bottom: 52 } },
+      plugins:{ legend:{ display:false }, monthYearBands:{ chartId:'trendChart' } },
       scales:{
-        x:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'Space Grotesk',size:10}} },
+        x:{
+          grid:{color:'#1e2430'},
+          ticks:{
+            color:'#5a6278', font:{family:'Space Grotesk',size:9},
+            maxRotation:45, minRotation:30,
+            callback: function(val, idx) {
+              var lbl = this.getLabelForValue(val);
+              return lbl ? lbl.split(' ')[0] : '';
+            }
+          }
+        },
         y:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'Space Grotesk',size:10}} }
       },
       animation:{ duration:400 },
@@ -611,7 +770,7 @@ function updateTrendChart() {
     });
     return { label:a, data:data, borderColor:COLORS[a], backgroundColor:COLORS[a]+'22', fill:false, borderWidth:2, pointBackgroundColor:COLORS[a] };
   });
-  trendChart.data.labels = weeks.map(function(w){ return w.split(' ')[0]; });
+  trendChart.data.labels = weeks.slice(); // tam hafta adı — callback kısaltır
   trendChart.data.datasets = datasets;
   trendChart.update();
 }
@@ -655,17 +814,28 @@ function initRankChart() {
     type:'line', data:{ labels:[], datasets:[] },
     options:{
       responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
+      layout:{ padding:{ bottom: 52 } },
+      plugins:{ legend:{ display:false }, monthYearBands:{ chartId:'rankChart' } },
       scales:{
-        x:{ grid:{color:'#1e2430'}, ticks:{color:'#5a6278', font:{family:'Space Grotesk',size:10}} },
+        x:{
+          grid:{color:'#1e2430'},
+          ticks:{
+            color:'#5a6278', font:{family:'Space Grotesk',size:9},
+            maxRotation:45, minRotation:30,
+            callback: function(val, idx) {
+              var lbl = this.getLabelForValue(val);
+              return lbl ? lbl.split(' ')[0] : '';
+            }
+          }
+        },
         y:{
           grid:{color:'#1e2430'},
           ticks:{
             color:'#5a6278', font:{family:'Space Grotesk',size:10},
-            // Sıralama: 1 en üstte olmalı, yani y ekseni ters
-            callback: function(val) { return '#' + val; }
+            stepSize: 1,
+            callback: function(val) { return Number.isInteger(val) ? '#' + val : ''; }
           },
-          reverse: true,  // 1. sıra yukarıda
+          reverse: true,
           min: 1
         }
       },
@@ -689,7 +859,7 @@ function updateRankChart() {
     });
     return { label:a, data:data, borderColor:COLORS[a], backgroundColor:COLORS[a]+'22', fill:false, borderWidth:2, pointBackgroundColor:COLORS[a] };
   });
-  rankChart.data.labels = weeks.map(function(w){ return w.split(' ')[0]; });
+  rankChart.data.labels = weeks.slice(); // tam hafta adı
   rankChart.data.datasets = datasets;
   rankChart.update();
 }
