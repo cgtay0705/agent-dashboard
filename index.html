@@ -164,7 +164,7 @@
 <!-- LOADING -->
 <div id="loadingOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(10,12,16,0.95);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="width:48px;height:48px;border:3px solid #1e2430;border-top-color:#00e5a0;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-  <div style="font-family:'Space Grotesk',sans-serif;font-size:12px;color:#5a6278;letter-spacing:2px">GOOGLE SHEETS'TEN VERİ YÜKLENIYOR...</div>
+  <div style="font-family:Space Grotesk,sans-serif;font-size:12px;color:#5a6278;letter-spacing:2px">GOOGLE SHEETS'TEN VERİ YÜKLENIYOR...</div>
 </div>
 <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
@@ -407,7 +407,7 @@ function handleData(json) {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
-      '<div style="font-family:'Space Grotesk';font-size:13px">Hata: ' + msg + '</div>' +
+      '<div style="font-family:Space Grotesk;font-size:13px">Hata: ' + msg + '</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
   }
@@ -419,8 +419,8 @@ window.onload = function() {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⏱️</div>' +
-      '<div style="font-family:'Space Grotesk';font-size:13px">Yuklenemiyor — Tekrar deneyin</div>' +
-      '<div style="font-size:10px;color:#5a6278;margin-top:6px;font-family:'Space Grotesk'">Ilk acilista 30-45sn surebilir</div>' +
+      '<div style="font-family:Space Grotesk;font-size:13px">Yuklenemiyor — Tekrar deneyin</div>' +
+      '<div style="font-size:10px;color:#5a6278;margin-top:6px;font-family:Space Grotesk">Ilk acilista 30-45sn surebilir</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
   }, 45000);
@@ -432,7 +432,7 @@ window.onload = function() {
     document.getElementById('loadingOverlay').innerHTML =
       '<div style="text-align:center;color:#ff4757">' +
       '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
-      '<div style="font-family:'Space Grotesk';font-size:13px">Script yuklenemedi</div>' +
+      '<div style="font-family:Space Grotesk;font-size:13px">Script yuklenemedi</div>' +
       '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
       '</div>';
   };
@@ -905,7 +905,7 @@ function updateChangeCards() {
   var weeks = Object.keys(WEEKS_DATA);
   var idx = weeks.indexOf(currentWeek);
   if(idx >= weeks.length-1) {
-    document.getElementById('changeCards').innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:'Space Grotesk'">Önceki hafta verisi yok</div>';
+    document.getElementById('changeCards').innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:Space Grotesk">Önceki hafta verisi yok</div>';
     return;
   }
   var cur = WEEKS_DATA[currentWeek];
