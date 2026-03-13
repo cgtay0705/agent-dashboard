@@ -226,25 +226,14 @@
     </div>
   </div>
 
-  <!-- TREND + LEADERBOARD -->
-  <div class="grid-main">
-    <div class="panel">
-      <div class="panel-head"><span class="panel-title">📈 Haftalık Puan Trendi (Tüm Sezonlar)</span></div>
-      <div class="agent-tabs" id="agentTabs"></div>
-      <div class="panel-body">
-        <div class="chart-wrap" style="height:260px"><canvas id="trendChart"></canvas></div>
-      </div>
-    </div>
+  <!-- SIRALAMA + RADAR -->
+  <div class="grid-2" style="margin-bottom:20px">
     <div class="panel">
       <div class="panel-head"><span class="panel-title">🏆 Sıralama</span></div>
       <div class="panel-body" style="padding:12px 20px">
         <div class="leaderboard" id="leaderboard"></div>
       </div>
     </div>
-  </div>
-
-  <!-- RADAR + HEATMAP -->
-  <div class="grid-2">
     <div class="panel">
       <div class="panel-head"><span class="panel-title">🎯 Agent Metrik Profili (Radar)</span></div>
       <div class="agent-tabs" id="radarTabs"></div>
@@ -252,18 +241,10 @@
         <div class="chart-wrap" style="height:280px"><canvas id="radarChart"></canvas></div>
       </div>
     </div>
-    <div class="panel">
-      <div class="panel-head"><span class="panel-title">🌡️ Puan Heatmap — Hafta × Agent</span></div>
-      <div class="panel-body" style="padding:12px">
-        <div class="heatmap-wrap">
-          <table class="heatmap-table" id="heatmapTable"></table>
-        </div>
-      </div>
-    </div>
   </div>
 
   <!-- BAR + METRIKLER -->
-  <div class="grid-2">
+  <div class="grid-2" style="margin-bottom:20px">
     <div class="panel">
       <div class="panel-head">
         <span class="panel-title">📊 Metrik Bazlı Karşılaştırma</span>
@@ -288,6 +269,25 @@
           <div class="panel-title" style="margin-bottom:10px">📌 Haftalık Özet Metrikler</div>
           <div class="metric-grid" id="metricGrid"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREND — TAM GENİŞLİK -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-head"><span class="panel-title">📈 Haftalık Puan Trendi (Tüm Sezonlar)</span></div>
+    <div class="agent-tabs" id="agentTabs"></div>
+    <div class="panel-body">
+      <div class="chart-wrap" style="height:280px"><canvas id="trendChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- HEATMAP — TAM GENİŞLİK -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-head"><span class="panel-title">🌡️ Puan Heatmap — Hafta × Agent</span></div>
+    <div class="panel-body" style="padding:12px">
+      <div class="heatmap-wrap">
+        <table class="heatmap-table" id="heatmapTable"></table>
       </div>
     </div>
   </div>
@@ -368,8 +368,9 @@ function handleData(json) {
       COLORS[a] = COLOR_PALETTE[i % COLOR_PALETTE.length];
     });
 
-    // İlk hafta = en son hafta (Sheets sekme sırası)
-    currentWeek = Object.keys(WEEKS_DATA)[0];
+    // Son hafta = Sheets'teki en son sekme (en yeni veri)
+    var allWeekKeys = Object.keys(WEEKS_DATA);
+    currentWeek = allWeekKeys[allWeekKeys.length - 1];
     radarAgent = HEATMAP_AGENTS.find(function(a) { return COLORS[a]; }) || AGENTS_CORE[0];
     activeAgents = new Set(AGENTS_CORE.slice(0, 3));
 
