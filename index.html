@@ -278,7 +278,7 @@
     <div class="panel-head"><span class="panel-title">📊 Haftalık Sıralama Trendi (Tüm Sezonlar)</span></div>
     <div class="agent-tabs" id="agentTabs2"></div>
     <div class="panel-body">
-      <div class="chart-wrap" style="height:280px"><canvas id="rankChart"></canvas></div>
+      <div class="chart-wrap" style="height:320px;overflow:visible"><canvas id="rankChart" style="overflow:visible"></canvas></div>
     </div>
   </div>
 
@@ -287,7 +287,7 @@
     <div class="panel-head"><span class="panel-title">📈 Haftalık Puan Trendi (Tüm Sezonlar)</span></div>
     <div class="agent-tabs" id="agentTabs"></div>
     <div class="panel-body">
-      <div class="chart-wrap" style="height:280px"><canvas id="trendChart"></canvas></div>
+      <div class="chart-wrap" style="height:320px;overflow:visible"><canvas id="trendChart" style="overflow:visible"></canvas></div>
     </div>
   </div>
 
@@ -326,16 +326,18 @@ function parseWeekLabel(lbl) {
 }
 
 function inferYears(weeks) {
-  // Hafta isimlerinden yıl çıkar; "23-29 Aralık" 2025, ondan sonrası 2026 varsayımı
+  // İlk hafta 7-13 Ekim = 2024, sonrası sıralı geçiş
+  // 23-29 Aralık -> 30 Aralık/Ocak = 2024->2025
+  // 22-28 Aralık -> 29 Aralık/Ocak = 2025->2026
   var years = [];
-  var currentYear = 2025;
+  var currentYear = 2024;
   for(var i=0; i<weeks.length; i++) {
     var info = parseWeekLabel(weeks[i]);
-    // "Aralık" haftasının ardından yıl değişir
     if(i > 0) {
       var prev = parseWeekLabel(weeks[i-1]);
-      if(prev.month === 11 && info.month !== null && info.month < 11) {
-        currentYear = 2026;
+      // Önceki ay Aralık, şimdiki ay Ocak veya daha düşük → yıl artar
+      if(prev.month === 11 && info.month !== null && info.month <= 2) {
+        currentYear++;
       }
     }
     years.push(currentYear);
@@ -368,11 +370,17 @@ var monthYearBandsPlugin = {
 
     var bandH = 18;  // ay bandı yüksekliği
     var yearH = 16;  // yıl bandı yüksekliği
-    var gap = 2;
-    var ayTop  = bottom + gap;
+    var gap = 3;
+    // Hafta etiketleri bottom'dan aşağı iniyor; chart layout padding ile yer açtık
+    // xScale.bottom = canvas altı, chartArea.bottom = grafik alanı altı
+    var xAxisBottom = xScale.bottom || (bottom + 40);
+    var ayTop  = xAxisBottom + gap;
     var yilTop = ayTop + bandH + gap;
 
     ctx.save();
+    ctx.restore(); // Önceki clip'i temizle
+    ctx.save();
+    // Canvas sınırlarını aş - clip yok
     ctx.font = '600 10px Space Grotesk, sans-serif';
     ctx.textBaseline = 'middle';
 
@@ -458,11 +466,9 @@ Chart.register(monthYearBandsPlugin);
 // ============================================================
 var API_URL = 'https://script.google.com/macros/s/AKfycbzDAYvsa8bbVXGos5T1auWbZpMDDcO1netBR8ZYxsUIIfKmqNSBHtQ0sQZ3M6zzX4lXQw/exec';
 
-// Trend grafiğinde gösterilecek agentlar (o haftada yoksa otomatik çıkar)
-var TREND_AGENTS = ['Beril','Şule','Berke','Aras','Mira','Han','Açelya','Bengü','Sencer','Demir','Cenkay','İrem','Riva','Necip'];
-
-// Heatmap + Radar'da gösterilecek sabit liste
-var HEATMAP_AGENTS = ['Beril','Şule','Berke','Aras','Mira','Han','Açelya','Bengü','Sencer','Demir','Cenkay','İrem','Riva','Necip'];
+// Dinamik — veri gelince handleData içinde doldurulur
+var TREND_AGENTS = [];
+var HEATMAP_AGENTS = [];
 
 var COLOR_PALETTE = [
   '#00e5a0','#0099ff','#ff6b35','#ffcc00','#c471ed',
@@ -524,6 +530,10 @@ function handleData(json) {
     AGENTS_CORE.forEach(function(a, i) {
       COLORS[a] = COLOR_PALETTE[i % COLOR_PALETTE.length];
     });
+
+    // Dinamik agent listeleri — sheets'ten gelen tüm unique isimler
+    TREND_AGENTS = AGENTS_CORE.slice();
+    HEATMAP_AGENTS = AGENTS_CORE.slice();
 
     // Son hafta = Sheets'teki en son sekme (en yeni veri)
     var allWeekKeys = Object.keys(WEEKS_DATA);
@@ -735,7 +745,7 @@ function initTrendChart() {
     type:'line', data:{ labels:[], datasets:[] },
     options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ bottom: 52 } },
+      layout:{ padding:{ bottom: 58 } },
       plugins:{ legend:{ display:false }, monthYearBands:{ chartId:'trendChart' } },
       scales:{
         x:{
@@ -814,7 +824,7 @@ function initRankChart() {
     type:'line', data:{ labels:[], datasets:[] },
     options:{
       responsive:true, maintainAspectRatio:false,
-      layout:{ padding:{ bottom: 52 } },
+      layout:{ padding:{ bottom: 58 } },
       plugins:{ legend:{ display:false }, monthYearBands:{ chartId:'rankChart' } },
       scales:{
         x:{
