@@ -215,14 +215,14 @@
       <div class="kpi-delta" id="kpi2delta"></div>
     </div>
     <div class="kpi-card orange">
-      <div class="kpi-label">Toplam Chat</div>
+      <div class="kpi-label">Ort. Toplam Chat</div>
       <div class="kpi-value orange" id="kpi3">—</div>
-      <div class="kpi-sub" id="kpi3sub">—</div>
+      <div class="kpi-delta" id="kpi3delta"></div>
     </div>
     <div class="kpi-card yellow">
       <div class="kpi-label">Ort. Memnuniyet</div>
       <div class="kpi-value yellow" id="kpi4">—</div>
-      <div class="kpi-sub">Bu hafta</div>
+      <div class="kpi-delta" id="kpi4delta"></div>
     </div>
   </div>
 
@@ -246,30 +246,21 @@
     </div>
   </div>
 
-  <!-- BAR + RADAR -->
-  <div class="grid-2" style="margin-bottom:20px">
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title">📊 Metrik Bazlı Karşılaştırma</span>
-        <select class="week-selector" id="metricSelect" onchange="updateBarChart()">
-          <option value="puan">Toplam Puan</option>
-          <option value="chat">Toplam Chat</option>
-          <option value="memnuniyet">Memnuniyet %</option>
-          <option value="karsilama">Chat Karşılama Sn</option>
-          <option value="uyeSoru">Üye Soru Süresi Sn</option>
-          <option value="ortChat">Ort. 1 Chat Sn</option>
-        </select>
-      </div>
-      <div class="panel-body">
-        <div class="chart-wrap" style="height:260px"><canvas id="barChart"></canvas></div>
-      </div>
+  <!-- BAR — TAM GENİŞLİK -->
+  <div class="panel" style="margin-bottom:20px">
+    <div class="panel-head">
+      <span class="panel-title">📊 Metrik Bazlı Karşılaştırma</span>
+      <select class="week-selector" id="metricSelect" onchange="updateBarChart()">
+        <option value="puan">Toplam Puan</option>
+        <option value="chat">Toplam Chat</option>
+        <option value="memnuniyet">Memnuniyet %</option>
+        <option value="karsilama">Chat Karşılama Sn</option>
+        <option value="uyeSoru">Üye Soru Süresi Sn</option>
+        <option value="ortChat">Ort. 1 Chat Sn</option>
+      </select>
     </div>
-    <div class="panel">
-      <div class="panel-head"><span class="panel-title">🎯 Agent Metrik Profili (Radar)</span></div>
-      <div class="agent-tabs" id="radarTabs"></div>
-      <div class="panel-body">
-        <div class="chart-wrap" style="height:280px"><canvas id="radarChart"></canvas></div>
-      </div>
+    <div class="panel-body">
+      <div class="chart-wrap" style="height:320px"><canvas id="barChart"></canvas></div>
     </div>
   </div>
 
@@ -483,9 +474,8 @@ var WEEKS_DATA = {};
 var COLORS = {};
 var AGENTS_CORE = [];
 var currentWeek = '';
-var radarAgent = '';
 var activeAgents = new Set();
-var trendChart, rankChart, radarChart, barChart;
+var trendChart, rankChart, barChart;
 
 // ============================================================
 // LOADING
@@ -538,8 +528,7 @@ function handleData(json) {
     // Son hafta = Sheets'teki en son sekme (en yeni veri)
     var allWeekKeys = Object.keys(WEEKS_DATA);
     currentWeek = allWeekKeys[allWeekKeys.length - 1];
-    radarAgent = HEATMAP_AGENTS.find(function(a) { return COLORS[a]; }) || AGENTS_CORE[0];
-    activeAgents = new Set(AGENTS_CORE.slice(0, 3));
+    activeAgents = new Set(); // Başlangıçta hiç seçili değil
 
     // Hafta selector
     var ws = document.getElementById('weekSelect');
@@ -552,10 +541,8 @@ function handleData(json) {
 
     buildAgentTabs();
     buildAgentTabs2();
-    buildRadarTabs();
     initTrendChart();
     initRankChart();
-    initRadarChart();
     initBarChart();
     updateAll();
     hideLoading();
@@ -573,28 +560,67 @@ function handleData(json) {
 
 window.onload = function() {
   showLoading();
-  var timeout = setTimeout(function() {
-    document.getElementById('loadingOverlay').innerHTML =
-      '<div style="text-align:center;color:#ff4757">' +
-      '<div style="font-size:32px;margin-bottom:16px">⏱️</div>' +
-      '<div style="font-family:Space Grotesk;font-size:13px">Yuklenemiyor — Tekrar deneyin</div>' +
-      '<div style="font-size:10px;color:#5a6278;margin-top:6px;font-family:Space Grotesk">Ilk acilista 30-45sn surebilir</div>' +
-      '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
-      '</div>';
-  }, 45000);
+  var attempts = 0;
 
-  var script = document.createElement('script');
-  script.src = API_URL + '?callback=handleData&t=' + Date.now();
-  script.onerror = function() {
-    clearTimeout(timeout);
-    document.getElementById('loadingOverlay').innerHTML =
-      '<div style="text-align:center;color:#ff4757">' +
-      '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
-      '<div style="font-family:Space Grotesk;font-size:13px">Script yuklenemedi</div>' +
-      '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
-      '</div>';
-  };
-  document.head.appendChild(script);
+  function loadData() {
+    attempts++;
+    var script = document.createElement('script');
+    // İlk denemede cache bypass (t=timestamp), retry'da farklı t
+    script.src = API_URL + '?callback=handleData&t=' + Date.now();
+
+    var retryTimer = null;
+
+    // 20 saniye sonra otomatik retry (1. deneme için)
+    if(attempts === 1) {
+      retryTimer = setTimeout(function() {
+        document.getElementById('loadingOverlay').querySelector && 
+        (document.getElementById('loadingOverlay').innerHTML =
+          '<div style="text-align:center;color:#5a6278">' +
+          '<div style="font-size:28px;margin-bottom:12px">⏳</div>' +
+          '<div style="font-family:Space Grotesk;font-size:13px;color:#8892a4">Bağlanıyor, lütfen bekleyin...</div>' +
+          '</div>');
+        loadData();
+      }, 20000);
+    }
+
+    // 45 saniye sonra hata göster (son deneme)
+    var timeout = setTimeout(function() {
+      document.getElementById('loadingOverlay').innerHTML =
+        '<div style="text-align:center;color:#ff4757">' +
+        '<div style="font-size:32px;margin-bottom:16px">⏱️</div>' +
+        '<div style="font-family:Space Grotesk;font-size:13px">Yuklenemiyor — Tekrar deneyin</div>' +
+        '<div style="font-size:10px;color:#5a6278;margin-top:6px;font-family:Space Grotesk">Ilk acilista 30-45sn surebilir</div>' +
+        '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
+        '</div>';
+    }, 45000);
+
+    // handleData'yı wrap et: timer'ları temizle
+    var origHandle = window.handleData;
+    window.handleData = function(json) {
+      clearTimeout(timeout);
+      clearTimeout(retryTimer);
+      window.handleData = origHandle; // geri yükle
+      origHandle(json);
+    };
+
+    script.onerror = function() {
+      clearTimeout(timeout);
+      clearTimeout(retryTimer);
+      if(attempts < 2) {
+        loadData();
+      } else {
+        document.getElementById('loadingOverlay').innerHTML =
+          '<div style="text-align:center;color:#ff4757">' +
+          '<div style="font-size:32px;margin-bottom:16px">⚠️</div>' +
+          '<div style="font-family:Space Grotesk;font-size:13px">Bağlantı hatası</div>' +
+          '<button onclick="location.reload()" style="margin-top:16px;padding:8px 20px;background:#00e5a0;color:#000;border:none;border-radius:6px;cursor:pointer;font-weight:700">Tekrar Dene</button>' +
+          '</div>';
+      }
+    };
+    document.head.appendChild(script);
+  }
+
+  loadData();
 };
 
 function loadWeek(w) { currentWeek = w; updateAll(); }
@@ -652,19 +678,31 @@ function updateKPIs() {
   document.getElementById('kpi1').textContent = sorted[0].puan;
   document.getElementById('kpi1name').textContent = sorted[0].isim;
   document.getElementById('kpi2').textContent = avgPuan;
-  document.getElementById('kpi3').textContent = totalChat.toLocaleString('tr');
-  document.getElementById('kpi3sub').textContent = data.length + ' agent';
+  var avgChatKpi = Math.round(data.reduce(function(s,d){ return s+d.chat; },0)/data.length);
+  document.getElementById('kpi3').textContent = avgChatKpi.toLocaleString('tr');
+
   document.getElementById('kpi4').textContent = '%' + avgMem;
 
   var weeks = Object.keys(WEEKS_DATA);
   var idx = weeks.indexOf(currentWeek);
-  if(idx < weeks.length-1) {
-    var prev = WEEKS_DATA[weeks[idx+1]];
+  if(idx > 0) {
+    var prev = WEEKS_DATA[weeks[idx-1]];
+    // Ortalama Puan delta
     var prevAvg = Math.round(prev.reduce(function(s,d){ return s+d.puan; },0) / prev.length);
     var diff = avgPuan - prevAvg;
     var el = document.getElementById('kpi2delta');
     el.textContent = (diff>=0 ? '▲ +' : '▼ ') + diff + ' geçen haftaya göre';
     el.className = 'kpi-delta ' + (diff>=0 ? 'up' : 'down');
+    // Ort. Toplam Chat delta
+    var prevAvgChat = Math.round(prev.reduce(function(s,d){ return s+d.chat; },0) / prev.length);
+    var diffChat = avgChatKpi - prevAvgChat;
+    var el3 = document.getElementById('kpi3delta');
+    if(el3) { el3.textContent = (diffChat>=0?'▲ +':'▼ ') + diffChat + ' geçen haftaya göre'; el3.className='kpi-delta '+(diffChat>=0?'up':'down'); }
+    // Ort. Memnuniyet delta
+    var prevAvgMem = Math.round(prev.reduce(function(s,d){ return s+d.memnuniyet; },0) / prev.length);
+    var diffMem = avgMem - prevAvgMem;
+    var el4 = document.getElementById('kpi4delta');
+    if(el4) { el4.textContent = (diffMem>=0?'▲ +':'▼ ') + '%' + diffMem + ' geçen haftaya göre'; el4.className='kpi-delta '+(diffMem>=0?'up':'down'); }
   }
 }
 
@@ -678,7 +716,7 @@ function updateLeaderboard() {
   var maxPuan = sorted[0].puan;
   var weeks = Object.keys(WEEKS_DATA);
   var idx = weeks.indexOf(currentWeek);
-  var prevData = idx < weeks.length-1 ? WEEKS_DATA[weeks[idx+1]] : null;
+  var prevData = idx > 0 ? WEEKS_DATA[weeks[idx-1]] : null;
 
   var lb = document.getElementById('leaderboard');
   lb.innerHTML = sorted.map(function(d,i) {
@@ -727,7 +765,7 @@ function buildAgentTabs() {
 }
 
 function toggleAgent(a, el) {
-  if(activeAgents.has(a) && activeAgents.size > 1) {
+  if(activeAgents.has(a)) {
     activeAgents.delete(a);
     el.classList.remove('active');
     el.style.background = ''; el.style.color = ''; el.style.borderColor = '';
@@ -797,7 +835,7 @@ function buildAgentTabs2() {
     return TREND_AGENTS.indexOf(a) !== -1;
   });
   // Varsayılan olarak aynı agentları seç
-  activeAgents2 = new Set(Array.from(activeAgents));
+  activeAgents2 = new Set(); // Başlangıçta hiç seçili değil
   trendFiltered.forEach(function(a) {
     var t = document.createElement('div');
     var isActive = activeAgents2.has(a);
@@ -805,7 +843,7 @@ function buildAgentTabs2() {
     t.textContent = a;
     if(isActive){ t.style.background=COLORS[a]; t.style.color='#000'; t.style.borderColor=COLORS[a]; }
     t.onclick = function() {
-      if(activeAgents2.has(a) && activeAgents2.size > 1) {
+      if(activeAgents2.has(a)) {
         activeAgents2.delete(a);
         t.classList.remove('active'); t.style.background=''; t.style.color=''; t.style.borderColor='';
       } else {
@@ -890,129 +928,9 @@ function updateRankChart() {
 // ============================================================
 
 // ============================================================
-function buildRadarTabs() {
-  var tabs = document.getElementById('radarTabs');
-  tabs.innerHTML = '';
-  // Heatmap agent listesinden mevcut olanları göster
-  var radarList = HEATMAP_AGENTS.filter(function(a) { return COLORS[a]; });
-  if(radarList.length === 0) radarList = AGENTS_CORE.slice(0,8);
-  radarList.forEach(function(a) {
-    var t = document.createElement('div');
-    t.className = 'agent-tab' + (a===radarAgent?' active':'');
-    t.textContent = a;
-    if(a===radarAgent){ t.style.background=COLORS[a]; t.style.color='#000'; t.style.borderColor=COLORS[a]; }
-    t.onclick = function() {
-      radarAgent = a;
-      document.querySelectorAll('#radarTabs .agent-tab').forEach(function(x){
-        x.classList.remove('active'); x.style.background=''; x.style.color=''; x.style.borderColor='';
-      });
-      t.classList.add('active'); t.style.background=COLORS[a]; t.style.color='#000'; t.style.borderColor=COLORS[a];
-      updateRadarChart();
-    };
-    tabs.appendChild(t);
-  });
-}
 
-function initRadarChart() {
-  var ctx = document.getElementById('radarChart').getContext('2d');
-  radarChart = new Chart(ctx, {
-    type:'radar', data:{ labels:[], datasets:[] },
-    options:{
-      responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ display:false } },
-      scales:{
-        r:{
-          min:0, max:100,
-          grid:{color:'#1e2430'}, angleLines:{color:'#1e2430'},
-          ticks:{color:'#5a6278', backdropColor:'transparent', font:{family:'Space Grotesk',size:9}, stepSize:20},
-          pointLabels:{color:'#8892a4', font:{size:10, family:'Space Grotesk'}}
-        }
-      }
-    }
-  });
-  updateRadarChart();
-}
 
-function normalizeMetric(val, min, max, invert) {
-  if(max === min) return 50;
-  var n = Math.max(0, Math.min(100, ((val-min)/(max-min))*100));
-  return invert ? 100-n : n;
-}
 
-function updateRadarChart() {
-  var agent = null;
-  var curData = WEEKS_DATA[currentWeek];
-  if(curData) agent = curData.find(function(d){ return d.isim===radarAgent; });
-  if(!agent) {
-    var searchWeeks = Object.keys(WEEKS_DATA);
-    for(var wi=0; wi<searchWeeks.length; wi++) {
-      agent = WEEKS_DATA[searchWeeks[wi]].find(function(d){ return d.isim===radarAgent; });
-      if(agent) { curData = WEEKS_DATA[searchWeeks[wi]]; break; }
-    }
-  }
-  if(!agent || !curData) return;
-
-  // Seçili haftanın min/max değerleri
-  function wMin(k) { return Math.min.apply(null, curData.map(function(d){ return d[k]; })); }
-  function wMax(k) { return Math.max.apply(null, curData.map(function(d){ return d[k]; })); }
-
-  // Min-Max normalizasyon — normal ve ters
-  function norm(val, min, max)        { return max===min ? 0 : (val-min)/(max-min)*100; }
-  function normInv(val, min, max)     { return max===min ? 0 : (max-val)/(max-min)*100; }
-
-  // Ağırlıklar (toplam %100)
-  var W = {
-    saatBasi:   0.20,
-    karsilama:  0.20,
-    chat:       0.15,
-    uyeSoru:    0.15,
-    ortChat:    0.10,
-    memnuniyet: 0.10,
-    cevapsiz:   0.10
-  };
-
-  // Her metriğin normalize değeri (0-100) — radar eksenleri bu değerleri gösterir
-  // Ağırlık etiketlerde belirtilmiş, görsel büyüklük normalize değeriyle orantılı
-  var scores = [
-    norm(agent.saatBasi,     wMin('saatBasi'),   wMax('saatBasi')),    // %20
-    norm(agent.memnuniyet,   wMin('memnuniyet'), wMax('memnuniyet')),  // %10
-    norm(agent.chat,         wMin('chat'),       wMax('chat')),        // %15
-    normInv(agent.karsilama, wMin('karsilama'),  wMax('karsilama')),   // %20
-    normInv(agent.uyeSoru,   wMin('uyeSoru'),    wMax('uyeSoru')),     // %15
-    normInv(agent.ortChat,   wMin('ortChat'),    wMax('ortChat')),     // %10
-    normInv(agent.cevapsiz,  wMin('cevapsiz'),   wMax('cevapsiz')),    // %10
-  ];
-
-  // Toplam ağırlıklı puan (0-100 arası) — tooltip'te göster
-  var totalScore = (
-    norm(agent.saatBasi,     wMin('saatBasi'),   wMax('saatBasi'))   * W.saatBasi   +
-    norm(agent.memnuniyet,   wMin('memnuniyet'), wMax('memnuniyet')) * W.memnuniyet +
-    norm(agent.chat,         wMin('chat'),       wMax('chat'))       * W.chat       +
-    normInv(agent.karsilama, wMin('karsilama'),  wMax('karsilama'))  * W.karsilama  +
-    normInv(agent.uyeSoru,   wMin('uyeSoru'),    wMax('uyeSoru'))    * W.uyeSoru    +
-    normInv(agent.ortChat,   wMin('ortChat'),    wMax('ortChat'))    * W.ortChat    +
-    normInv(agent.cevapsiz,  wMin('cevapsiz'),   wMax('cevapsiz'))   * W.cevapsiz
-  ).toFixed(1);
-
-  radarChart.data.labels = [
-    'Saat Başı Chat (%20)',
-    'Memnuniyet (%10)',
-    'Toplam Chat (%15)',
-    'Karşılama Hızı (%20)',
-    'Soru Hızı (%15)',
-    'Chat Hızı (%10)',
-    'Cevapsız (%10)'
-  ];
-  radarChart.data.datasets = [{
-    label: radarAgent + ' — Skor: ' + totalScore,
-    data: scores,
-    borderColor: COLORS[radarAgent] || '#00e5a0',
-    backgroundColor: (COLORS[radarAgent] || '#00e5a0') + '33',
-    borderWidth: 2,
-    pointBackgroundColor: COLORS[radarAgent] || '#00e5a0',
-  }];
-  radarChart.update();
-}
 
 // ============================================================
 // BAR CHART
@@ -1047,7 +965,6 @@ function updateBarChart() {
     borderWidth:1, borderRadius:4
   }];
   barChart.update();
-  updateRadarChart();
 }
 
 // ============================================================
@@ -1124,12 +1041,12 @@ function updateHeatmap() {
 function updateChangeCards() {
   var weeks = Object.keys(WEEKS_DATA);
   var idx = weeks.indexOf(currentWeek);
-  if(idx >= weeks.length-1) {
+  if(idx <= 0) {
     document.getElementById('changeCards').innerHTML = '<div style="color:var(--muted);font-size:12px;font-family:Space Grotesk">Önceki hafta verisi yok</div>';
     return;
   }
   var cur = WEEKS_DATA[currentWeek];
-  var prev = WEEKS_DATA[weeks[idx+1]];
+  var prev = WEEKS_DATA[weeks[idx-1]];
 
   // Bu haftaki ve önceki haftaki sıralamalar
   var curSorted  = cur.slice().sort(function(a,b){ return b.puan - a.puan; });
@@ -1179,15 +1096,64 @@ function updateMetricGrid() {
   var avgKarsilama = Math.round(data.reduce(function(s,d){ return s+d.karsilama; },0)/data.length);
   var avgOrt = Math.round(data.reduce(function(s,d){ return s+d.ortChat; },0)/data.length);
   var totalCevapsiz = data.reduce(function(s,d){ return s+d.cevapsiz; },0);
-  var avgSaatBasi = (data.reduce(function(s,d){ return s+d.saatBasi; },0)/data.length).toFixed(1);
-  var avgChat = Math.round(data.reduce(function(s,d){ return s+d.chat; },0)/data.length);
+  var avgSaatBasi = parseFloat((data.reduce(function(s,d){ return s+d.saatBasi; },0)/data.length).toFixed(1));
+  var totalChat = data.reduce(function(s,d){return s+d.chat;},0);
   var cevapsizColor = totalCevapsiz===0?'var(--accent)':'var(--danger)';
+
+  // Delta helper: ok + renk
+  function delta(diff, invert, unit) {
+    // invert=true: düşüş iyi (süre, cevapsız)
+    var better = invert ? diff < 0 : diff > 0;
+    var sign = diff > 0 ? '+' : '';
+    var arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '→';
+    var cls = better ? 'color:#00e5a0' : diff===0 ? 'color:#5a6278' : 'color:#ff4757';
+    return '<span style="font-size:10px;'+cls+'">'+arrow+' '+sign+diff+(unit||'')+'</span>';
+  }
+
+  var weeks = Object.keys(WEEKS_DATA);
+  var idx = weeks.indexOf(currentWeek);
+  var prev = idx > 0 ? WEEKS_DATA[weeks[idx-1]] : null;
+
+  var dChat='', dKarsilama='', dOrt='', dCevapsiz='', dSaatBasi='';
+  if(prev) {
+    var pTotalChat    = prev.reduce(function(s,d){return s+d.chat;},0);
+    var pKarsilama    = Math.round(prev.reduce(function(s,d){return s+d.karsilama;},0)/prev.length);
+    var pOrt          = Math.round(prev.reduce(function(s,d){return s+d.ortChat;},0)/prev.length);
+    var pCevapsiz     = prev.reduce(function(s,d){return s+d.cevapsiz;},0);
+    var pSaatBasi     = parseFloat((prev.reduce(function(s,d){return s+d.saatBasi;},0)/prev.length).toFixed(1));
+    dChat      = delta(totalChat    - pTotalChat,    false, ' chat');
+    dKarsilama = delta(avgKarsilama - pKarsilama,    true,  ' sn');
+    dOrt       = delta(avgOrt       - pOrt,          true,  ' sn');
+    dCevapsiz  = delta(totalCevapsiz - pCevapsiz,    true,  '');
+    dSaatBasi  = delta(parseFloat((avgSaatBasi - pSaatBasi).toFixed(1)), false, '');
+  }
+
   document.getElementById('metricGrid').innerHTML =
-    '<div class="metric-item" style="grid-column:1/-1;border-left:3px solid var(--accent2)"><div class="metric-item-label">Ort. Toplam Chat</div><div class="metric-item-val" style="color:var(--accent2)">'+avgChat+' chat</div></div>'+
-    '<div class="metric-item"><div class="metric-item-label">Karşılama Süresi</div><div class="metric-item-val" style="color:var(--accent2)">'+avgKarsilama+' saniye</div></div>'+
-    '<div class="metric-item"><div class="metric-item-label">Ort. Chat Süresi</div><div class="metric-item-val" style="color:var(--accent3)">'+avgOrt+' saniye</div></div>'+
-    '<div class="metric-item"><div class="metric-item-label">Toplam Cevapsız</div><div class="metric-item-val" style="color:'+cevapsizColor+'">'+totalCevapsiz+'</div></div>'+
-    '<div class="metric-item"><div class="metric-item-label">Verimlilik</div><div class="metric-item-val" style="color:var(--warn)">'+avgSaatBasi+'</div></div>';
+    '<div class="metric-item" style="grid-column:1/-1;border-left:3px solid var(--accent2)">'+
+      '<div class="metric-item-label">Toplam Chat</div>'+
+      '<div class="metric-item-val" style="color:var(--accent2)">'+totalChat.toLocaleString('tr')+' chat</div>'+
+      (dChat ? '<div>'+dChat+' geçen haftaya göre</div>' : '')+
+    '</div>'+
+    '<div class="metric-item">'+
+      '<div class="metric-item-label">Karşılama Süresi</div>'+
+      '<div class="metric-item-val" style="color:var(--accent2)">'+avgKarsilama+' saniye</div>'+
+      (dKarsilama ? '<div>'+dKarsilama+' geçen haftaya göre</div>' : '')+
+    '</div>'+
+    '<div class="metric-item">'+
+      '<div class="metric-item-label">Ort. Chat Süresi</div>'+
+      '<div class="metric-item-val" style="color:var(--accent3)">'+avgOrt+' saniye</div>'+
+      (dOrt ? '<div>'+dOrt+' geçen haftaya göre</div>' : '')+
+    '</div>'+
+    '<div class="metric-item">'+
+      '<div class="metric-item-label">Toplam Cevapsız</div>'+
+      '<div class="metric-item-val" style="color:'+cevapsizColor+'">'+totalCevapsiz+'</div>'+
+      (dCevapsiz ? '<div>'+dCevapsiz+' geçen haftaya göre</div>' : '')+
+    '</div>'+
+    '<div class="metric-item">'+
+      '<div class="metric-item-label">Verimlilik</div>'+
+      '<div class="metric-item-val" style="color:var(--warn)">'+avgSaatBasi+'</div>'+
+      (dSaatBasi ? '<div>'+dSaatBasi+' geçen haftaya göre</div>' : '')+
+    '</div>';
 }
 </script>
 </body>
