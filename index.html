@@ -278,7 +278,7 @@
     <div class="panel-head"><span class="panel-title">📊 Haftalık Sıralama Trendi (Tüm Sezonlar)</span></div>
     <div class="agent-tabs" id="agentTabs2"></div>
     <div class="panel-body">
-      <div class="chart-wrap" style="height:320px;overflow:visible"><canvas id="rankChart" style="overflow:visible"></canvas></div>
+      <div class="chart-wrap" style="height:380px;overflow:visible"><canvas id="rankChart" style="overflow:visible"></canvas></div>
     </div>
   </div>
 
@@ -843,11 +843,11 @@ function initRankChart() {
           ticks:{
             color:'#5a6278', font:{family:'Space Grotesk',size:10},
             stepSize: 1,
-            callback: function(val) { return (Number.isInteger(val) && val >= 1) ? '#' + val : ''; }
+            callback: function(val) { return (Number.isInteger(val) && val >= 1 && val <= 18) ? '#' + val : ''; }
           },
           reverse: true,
-          min: 1,
-          max: 20
+          min: 0.5,
+          max: 18.5
         }
       },
       animation:{ duration:400 },
