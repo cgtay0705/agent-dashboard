@@ -162,11 +162,62 @@
 <body>
 
 <!-- LOADING -->
-<div id="loadingOverlay" style="position:fixed;inset:0;z-index:9999;background:rgba(10,12,16,0.95);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
+<div id="loadingOverlay" style="position:fixed;inset:0;z-index:9998;background:rgba(10,12,16,0.95);display:none;align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="width:48px;height:48px;border:3px solid #1e2430;border-top-color:#00e5a0;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-  <div style="font-family:Space Grotesk,sans-serif;font-size:12px;color:#5a6278;letter-spacing:2px">GOOGLE SHEETS'TEN VERİ YÜKLENIYOR...</div>
+  <div style="font-family:Space Grotesk,sans-serif;font-size:12px;color:#5a6278;letter-spacing:2px">VERİ HAZIRLANIYOR...</div>
 </div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+<!-- ŞİFRE OVERLAY -->
+<div id="authOverlay" style="position:fixed;inset:0;z-index:9999;background:#0a0c10;display:flex;align-items:center;justify-content:center;">
+  <div id="authBox" style="width:340px;background:#12151c;border:1px solid #1e2430;border-radius:16px;padding:40px 36px;display:flex;flex-direction:column;align-items:center;gap:20px;">
+    
+    <!-- Logo -->
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:32px;height:32px">
+        <polygon points="4,30 4,14 12,22 20,8 28,22 36,14 36,30" fill="none" stroke="#ABF625" stroke-width="2.5" stroke-linejoin="round"/>
+        <rect x="4" y="29" width="32" height="4" rx="1.5" fill="#ABF625"/>
+        <circle cx="4"  cy="14" r="2.5" fill="#ABF625"/>
+        <circle cx="20" cy="8"  r="2.5" fill="#ABF625"/>
+        <circle cx="36" cy="14" r="2.5" fill="#ABF625"/>
+      </svg>
+      <span style="font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:#fff;letter-spacing:1px">DUMAN<span style="color:#ABF625">BET</span></span>
+    </div>
+
+    <div style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:#5a6278;letter-spacing:2px;text-align:center">AGENT PERFORMANS DASHBOARD</div>
+
+    <div style="width:100%;height:1px;background:#1e2430;margin:4px 0"></div>
+
+    <!-- Input -->
+    <div style="width:100%;display:flex;flex-direction:column;gap:8px">
+      <label style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:#8892a4;letter-spacing:1px">ŞİFRE</label>
+      <input id="pwdInput" type="password" placeholder="••••••••"
+        style="width:100%;box-sizing:border-box;padding:12px 16px;background:#0a0c10;border:1px solid #2e3450;border-radius:8px;color:#fff;font-family:'Space Grotesk',sans-serif;font-size:15px;outline:none;transition:border-color 0.2s"
+        onfocus="this.style.borderColor='#ABF625'"
+        onblur="this.style.borderColor='#2e3450'"
+        onkeydown="if(event.key==='Enter')checkAuth()"
+      />
+      <div id="authError" style="font-family:'Space Grotesk',sans-serif;font-size:11px;color:#ff4757;min-height:16px;display:none">Hatalı şifre, tekrar deneyin.</div>
+    </div>
+
+    <!-- Buton -->
+    <button onclick="checkAuth()" style="width:100%;padding:13px;background:#ABF625;color:#000;border:none;border-radius:8px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;cursor:pointer;transition:opacity 0.2s"
+      onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+      GİRİŞ
+    </button>
+
+    <!-- Veri yükleniyor bildirimi -->
+    <div id="authLoadingHint" style="font-family:'Space Grotesk',sans-serif;font-size:10px;color:#3a4258;letter-spacing:1px;display:flex;align-items:center;gap:6px">
+      <div style="width:6px;height:6px;border-radius:50%;background:#3a4258;animation:pulse 1.5s ease-in-out infinite"></div>
+      VERİ ARKA PLANDA YÜKLENIYOR
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:0.3}50%{opacity:1}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+</style>
 
 <div class="topbar">
   <div class="topbar-left">
@@ -545,7 +596,13 @@ function handleData(json) {
     initRankChart();
     initBarChart();
     updateAll();
-    hideLoading();
+    dataReady = true;
+    // Şifre ekranındaki "yükleniyor" ipucunu güncelle
+    var hint = document.getElementById('authLoadingHint');
+    if(hint) { hint.innerHTML = '<div style="width:6px;height:6px;border-radius:50%;background:#00e5a0"></div><span style="color:#00e5a0">VERİ HAZIR — ŞİFRENİZİ GİRİN</span>'; }
+    if(authPassed) {
+      hideLoading();
+    }
 
   } catch(err) {
     var msg = err && err.message ? err.message : 'Bilinmeyen hata';
@@ -558,8 +615,59 @@ function handleData(json) {
   }
 }
 
+
+// ============================================================
+// AUTH
+// ============================================================
+var PWD_HASH = '5f445c6a4c8cdcd750ec357206e614de9445120558947977e8a4377fde3b16f4';
+var dataReady = false;   // veri geldi mi
+var authPassed = false;  // şifre doğrulandı mı
+
+async function hashStr(str) {
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+async function checkAuth() {
+  var val = document.getElementById('pwdInput').value;
+  var h = await hashStr(val);
+  if(h === PWD_HASH) {
+    authPassed = true;
+    sessionStorage.setItem('dbauth', PWD_HASH);
+    document.getElementById('authOverlay').style.display = 'none';
+    if(dataReady) {
+      // Veri zaten hazır — direkt göster
+      hideLoading();
+    } else {
+      // Veri bekleniyor — spinner göster
+      showLoading();
+    }
+  } else {
+    var box = document.getElementById('authBox');
+    var err = document.getElementById('authError');
+    err.style.display = 'block';
+    box.style.animation = 'shake 0.4s ease';
+    setTimeout(function(){ box.style.animation = ''; }, 400);
+    document.getElementById('pwdInput').value = '';
+    document.getElementById('pwdInput').focus();
+  }
+}
+
+function initAuth() {
+  var saved = sessionStorage.getItem('dbauth');
+  if(saved === PWD_HASH) {
+    // Oturum açık — şifre sorma
+    authPassed = true;
+    document.getElementById('authOverlay').style.display = 'none';
+    showLoading();
+  } else {
+    // Şifre ekranını göster — veri arka planda yüklenmeye devam eder
+    document.getElementById('authOverlay').style.display = 'flex';
+  }
+}
+
 window.onload = function() {
-  showLoading();
+  initAuth();
   var attempts = 0;
 
   function loadData() {
@@ -699,8 +807,8 @@ function updateKPIs() {
     var el3 = document.getElementById('kpi3delta');
     if(el3) { el3.textContent = (diffChat>=0?'▲ +':'▼ ') + diffChat + ' geçen haftaya göre'; el3.className='kpi-delta '+(diffChat>=0?'up':'down'); }
     // Ort. Memnuniyet delta
-    var prevAvgMem = Math.round(prev.reduce(function(s,d){ return s+d.memnuniyet; },0) / prev.length);
-    var diffMem = avgMem - prevAvgMem;
+    var prevAvgMem = parseFloat((prev.reduce(function(s,d){ return s+d.memnuniyet; },0) / prev.length).toFixed(1));
+    var diffMem = parseFloat((avgMem - prevAvgMem).toFixed(1));
     var el4 = document.getElementById('kpi4delta');
     if(el4) { el4.textContent = (diffMem>=0?'▲ +':'▼ ') + '%' + diffMem + ' geçen haftaya göre'; el4.className='kpi-delta '+(diffMem>=0?'up':'down'); }
   }
@@ -1074,15 +1182,22 @@ function updateChangeCards() {
   });
 
   document.getElementById('changeCards').innerHTML = changes.map(function(d) {
-    var cls = d.diff>0?'up':d.diff<0?'down':'same';
+    // Her iki haftada da son 3'teyse "ısrarcı kötü" — kırmızı vurgulu
+    var persistBad = curBottom3.indexOf(d.isim) !== -1 && prevBottom3.indexOf(d.isim) !== -1;
+    var cls = persistBad ? 'down' : d.diff>0?'up':d.diff<0?'down':'same';
     var arrow = d.diff>0?'↑':d.diff<0?'↓':'→';
     var sign = d.diff>0?'+':'';
     var rankText = d.curRank ? '#'+d.curRank : '—';
     var diffText = d.prevRank ? sign+d.diff+' sıra' : 'Yeni';
-    return '<div class="change-card '+cls+'">'+
+    var persistBadHtml = persistBad
+      ? '<span style="color:#ff4757;font-size:10px;font-weight:700;margin-left:4px">⚠️ 2 hafta üst üste son 3</span>'
+      : '';
+    var cardStyle = persistBad ? ' style="border-color:#ff475755;background:#ff47570d"' : '';
+    return '<div class="change-card '+cls+'"'+cardStyle+'>'+
       '<span class="change-arrow">'+arrow+'</span>'+
-      '<div class="change-name">'+d.isim+'</div>'+
+      '<div class="change-name">'+d.isim+(persistBad?' ❗':'')+'</div>'+
       '<div class="change-detail">'+rankText+'. sıra • '+diffText+'</div>'+
+      persistBadHtml+
       '</div>';
   }).join('');
 }
@@ -1107,7 +1222,7 @@ function updateMetricGrid() {
     var sign = diff > 0 ? '+' : '';
     var arrow = diff > 0 ? '▲' : diff < 0 ? '▼' : '→';
     var cls = better ? 'color:#00e5a0' : diff===0 ? 'color:#5a6278' : 'color:#ff4757';
-    return '<span style="font-size:10px;'+cls+'">'+arrow+' '+sign+diff+(unit||'')+'</span>';
+    return '<span style="font-size:10px;'+cls+'">'+arrow+' '+sign+diff+(unit||'')+' geçen haftaya göre</span>';
   }
 
   var weeks = Object.keys(WEEKS_DATA);
@@ -1132,27 +1247,27 @@ function updateMetricGrid() {
     '<div class="metric-item" style="grid-column:1/-1;border-left:3px solid var(--accent2)">'+
       '<div class="metric-item-label">Toplam Chat</div>'+
       '<div class="metric-item-val" style="color:var(--accent2)">'+totalChat.toLocaleString('tr')+' chat</div>'+
-      (dChat ? '<div>'+dChat+' geçen haftaya göre</div>' : '')+
+      (dChat ? '<div>'+dChat+'</div>' : '')+
     '</div>'+
     '<div class="metric-item">'+
       '<div class="metric-item-label">Karşılama Süresi</div>'+
       '<div class="metric-item-val" style="color:var(--accent2)">'+avgKarsilama+' saniye</div>'+
-      (dKarsilama ? '<div>'+dKarsilama+' geçen haftaya göre</div>' : '')+
+      (dKarsilama ? '<div>'+dKarsilama+'</div>' : '')+
     '</div>'+
     '<div class="metric-item">'+
       '<div class="metric-item-label">Ort. Chat Süresi</div>'+
       '<div class="metric-item-val" style="color:var(--accent3)">'+avgOrt+' saniye</div>'+
-      (dOrt ? '<div>'+dOrt+' geçen haftaya göre</div>' : '')+
+      (dOrt ? '<div>'+dOrt+'</div>' : '')+
     '</div>'+
     '<div class="metric-item">'+
       '<div class="metric-item-label">Toplam Cevapsız</div>'+
       '<div class="metric-item-val" style="color:'+cevapsizColor+'">'+totalCevapsiz+'</div>'+
-      (dCevapsiz ? '<div>'+dCevapsiz+' geçen haftaya göre</div>' : '')+
+      (dCevapsiz ? '<div>'+dCevapsiz+'</div>' : '')+
     '</div>'+
     '<div class="metric-item">'+
       '<div class="metric-item-label">Verimlilik</div>'+
       '<div class="metric-item-val" style="color:var(--warn)">'+avgSaatBasi+'</div>'+
-      (dSaatBasi ? '<div>'+dSaatBasi+' geçen haftaya göre</div>' : '')+
+      (dSaatBasi ? '<div>'+dSaatBasi+'</div>' : '')+
     '</div>';
 }
 </script>
